@@ -3,6 +3,17 @@ import SwiftUI
 struct TodaySnapView: View {
     let viewModel: TodaySnapViewModel
     let onRecord: () -> Void
+    let onSelectSnap: (TodaySnapEntry.ID) -> Void
+
+    init(
+        viewModel: TodaySnapViewModel,
+        onRecord: @escaping () -> Void,
+        onSelectSnap: @escaping (TodaySnapEntry.ID) -> Void = { _ in }
+    ) {
+        self.viewModel = viewModel
+        self.onRecord = onRecord
+        self.onSelectSnap = onSelectSnap
+    }
 
     var body: some View {
         ZStack {
@@ -12,7 +23,11 @@ struct TodaySnapView: View {
             case .loading:
                 ProgressView()
             case let .content(summary):
-                TodaySnapContent(summary: summary, onRecord: onRecord)
+                TodaySnapContent(
+                    summary: summary,
+                    onRecord: onRecord,
+                    onSelectSnap: onSelectSnap
+                )
             case .failure:
                 ContentUnavailableView {
                     Label("오늘 기록을 불러오지 못했어요", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
@@ -31,12 +46,18 @@ struct TodaySnapView: View {
 private struct TodaySnapContent: View {
     let summary: TodaySnapSummary
     let onRecord: () -> Void
+    let onSelectSnap: (TodaySnapEntry.ID) -> Void
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 header(availableWidth: proxy.size.width)
-                featuredCards(availableWidth: proxy.size.width)
+                TodaySnapPhysicsCanvas(
+                    entries: summary.featuredEntries,
+                    onSelect: onSelectSnap
+                )
+                .frame(width: proxy.size.width, height: 310)
+                .offset(y: 86)
                 recordButton(availableWidth: proxy.size.width)
                 pageIndicator(availableWidth: proxy.size.width)
                 totalSection
@@ -67,34 +88,6 @@ private struct TodaySnapContent: View {
                 .shadow(color: .black.opacity(0.15), radius: 12, y: 9)
                 .accessibilityHidden(true)
                 .position(x: availableWidth - 40, y: 34)
-        }
-    }
-
-    private func featuredCards(availableWidth: CGFloat) -> some View {
-        let maximumAmount = summary.featuredEntries.map(\.amount).max()
-
-        return Group {
-            if let entry = summary.featuredEntries[safe: 0], let maximumAmount {
-                FeaturedSnapCard(
-                    entry: entry,
-                    imageSize: TodayCanvasLayout.imageSize(for: entry, maximumAmount: maximumAmount),
-                    layout: .landscape
-                )
-                .position(x: availableWidth * 0.357, y: 276)
-            }
-            if let entry = summary.featuredEntries[safe: 1], let maximumAmount {
-                FeaturedSnapCard(
-                    entry: entry,
-                    imageSize: TodayCanvasLayout.imageSize(for: entry, maximumAmount: maximumAmount),
-                    layout: .portrait
-                )
-                .position(x: availableWidth * 0.736, y: 303)
-            }
-            if let entry = summary.featuredEntries[safe: 2] {
-                PriceTicket(entry: entry)
-                    .rotationEffect(.degrees(-4))
-                    .position(x: availableWidth * 0.256, y: 354)
-            }
         }
     }
 
@@ -153,17 +146,17 @@ private struct TodaySnapContent: View {
                 .offset(x: 26, y: 612)
             HStack(spacing: 28) {
                 ForEach(summary.recentEntries) { entry in
-                    RecentSnapRow(entry: entry)
+                    Button {
+                        onSelectSnap(entry.id)
+                    } label: {
+                        RecentSnapRow(entry: entry)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Snap 상세 보기")
                 }
             }
             .offset(x: 26, y: 650)
         }
-    }
-}
-
-private extension Collection {
-    subscript(safe index: Index) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }
 

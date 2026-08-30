@@ -44,6 +44,9 @@
 		B00000000000000000000035 /* SnapCaptureModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000039 /* SnapCaptureModelTests.swift */; };
 		B00000000000000000000036 /* SnapJournalClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000040 /* SnapJournalClientTests.swift */; };
 		B00000000000000000000037 /* snaps in Resources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000041 /* snaps */; };
+		B00000000000000000000038 /* TodaySnapPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000042 /* TodaySnapPresentationTests.swift */; };
+		B00000000000000000000039 /* TodaySnapPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000043 /* TodaySnapPhysics.swift */; };
+		B00000000000000000000040 /* SnapDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000044 /* SnapDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -105,6 +108,9 @@
 		F00000000000000000000039 /* SnapCaptureModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapCaptureModelTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000040 /* SnapJournalClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapJournalClientTests.swift; sourceTree = "<group>"; };
 		F00000000000000000000041 /* snaps */ = {isa = PBXFileReference; lastKnownFileType = folder; name = snaps; path = ../../contracts/examples/v1/snaps; sourceTree = "<group>"; };
+		F00000000000000000000042 /* TodaySnapPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaySnapPresentationTests.swift; sourceTree = "<group>"; };
+		F00000000000000000000043 /* TodaySnapPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaySnapPhysics.swift; sourceTree = "<group>"; };
+		F00000000000000000000044 /* SnapDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -208,6 +214,7 @@
 				F00000000000000000000031 /* KeychainSessionStoreTests.swift */,
 				F00000000000000000000039 /* SnapCaptureModelTests.swift */,
 				F00000000000000000000040 /* SnapJournalClientTests.swift */,
+				F00000000000000000000042 /* TodaySnapPresentationTests.swift */,
 				F00000000000000000000032 /* identity */,
 				F00000000000000000000041 /* snaps */,
 			);
@@ -223,6 +230,8 @@
 				F00000000000000000000014 /* TodaySnapView.swift */,
 				F00000000000000000000017 /* TodayCanvasLayout.swift */,
 				F00000000000000000000018 /* TodaySnapCardViews.swift */,
+				F00000000000000000000043 /* TodaySnapPhysics.swift */,
+				F00000000000000000000044 /* SnapDetailView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -435,6 +444,8 @@
 				B00000000000000000000012 /* TodaySnapView.swift in Sources */,
 				B00000000000000000000014 /* TodayCanvasLayout.swift in Sources */,
 				B00000000000000000000015 /* TodaySnapCardViews.swift in Sources */,
+				B00000000000000000000039 /* TodaySnapPhysics.swift in Sources */,
+				B00000000000000000000040 /* SnapDetailView.swift in Sources */,
 				B00000000000000000000016 /* MoneySnapVisualSystem.swift in Sources */,
 				B00000000000000000000017 /* MoneySnapTabBar.swift in Sources */,
 				B00000000000000000000018 /* AuthenticationModels.swift in Sources */,
@@ -462,6 +473,7 @@
 				B00000000000000000000028 /* KeychainSessionStoreTests.swift in Sources */,
 				B00000000000000000000035 /* SnapCaptureModelTests.swift in Sources */,
 				B00000000000000000000036 /* SnapJournalClientTests.swift in Sources */,
+				B00000000000000000000038 /* TodaySnapPresentationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -84,6 +84,14 @@ final class TodaySnapViewModel {
         }
     }
 
+    func detailPresentation(for id: UUID) -> SnapDetailPresentation? {
+        guard case let .content(summary) = state,
+              let entry = summary.entries.first(where: { $0.id == id }) else {
+            return nil
+        }
+        return SnapDetailPresentation(entry: entry, day: summary.day)
+    }
+
     private static func day(from localDay: String) -> SnapDay? {
         let parts = localDay.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3 else { return nil }

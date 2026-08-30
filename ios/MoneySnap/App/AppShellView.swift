@@ -31,7 +31,7 @@ struct AppShellView: View {
                     NavigationStack(path: tabRouter.binding(for: tab)) {
                         rootView(for: tab)
                             .navigationDestination(for: AppRoute.self) { route in
-                                RoutePlaceholderView(route: route)
+                                destination(for: route)
                             }
                     }
                     .environment(tabRouter.router(for: tab))
@@ -41,15 +41,18 @@ struct AppShellView: View {
             }
             .toolbar(.hidden, for: .tabBar)
 
-            MoneySnapTabBar(selectedTab: $selectedTab) { tab in
-                if tab == .add {
-                    presentedSheet = .record
-                } else {
-                    selectedTab = tab
+            if tabRouter.router(for: selectedTab).path.isEmpty {
+                MoneySnapTabBar(selectedTab: $selectedTab) { tab in
+                    if tab == .add {
+                        presentedSheet = .record
+                    } else {
+                        selectedTab = tab
+                    }
                 }
-            }
                 .padding(.horizontal, 18)
                 .padding(.bottom, 21)
+                .transition(.opacity)
+            }
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .sheet(item: $presentedSheet) { sheet in
@@ -74,7 +77,10 @@ struct AppShellView: View {
         case .home:
             TodaySnapView(
                 viewModel: todayViewModel,
-                onRecord: { presentedSheet = .record }
+                onRecord: { presentedSheet = .record },
+                onSelectSnap: {
+                    tabRouter.router(for: .home).navigate(to: .snapDetail(id: $0))
+                }
             )
         case .profile:
             MySettingsView(authentication: authentication)
@@ -96,6 +102,18 @@ struct AppShellView: View {
             try await snapJournalClient.record(command)
         }
     }
+
+    @ViewBuilder
+    private func destination(for route: AppRoute) -> some View {
+        switch route {
+        case let .snapDetail(id):
+            if let presentation = todayViewModel.detailPresentation(for: id) {
+                SnapDetailView(presentation: presentation)
+            } else {
+                SnapDetailUnavailableView()
+            }
+        }
+    }
 }
 
 private enum AppSheet: String, Identifiable {
@@ -107,17 +125,6 @@ private extension AppTab {
     @ViewBuilder
     var label: some View {
         Label(title, systemImage: systemImage)
-    }
-}
-
-private struct RoutePlaceholderView: View {
-    let route: AppRoute
-
-    var body: some View {
-        switch route {
-        case .snapDetail:
-            PlaceholderView(title: "Snap 상세", systemImage: "photo")
-        }
     }
 }
 
