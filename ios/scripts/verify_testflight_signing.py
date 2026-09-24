@@ -44,6 +44,8 @@ def command(*args, stage='inspection'):
         categories = ['a sealed resource is missing or invalid',
                       'code object is not signed at all',
                       'failed to satisfy code requirement',
+                      'failed to satisfy specified code requirement',
+                      'invalid requirement specification',
                       'cssmerr_tp_not_trusted', 'certificate expired',
                       'invalid signature', 'unsealed contents',
                       'resource fork', 'code has no resources']
@@ -59,6 +61,13 @@ def extract_ipa(ipa, root):
     # zipfile.extractall loses executable permissions and symlinks, invalidating
     # an otherwise valid code signature. Preserve Apple's bundle metadata.
     command('/usr/bin/ditto', '-x', '-k', str(ipa), str(root), stage='IPA extraction')
+
+
+def verify_distribution_trust(app):
+    # The '=' distinguishes an inline requirement from a requirements filename.
+    command('/usr/bin/codesign', '--verify',
+            '-R=anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.4] exists',
+            str(app), stage='Apple distribution trust')
 
 
 def main():
@@ -87,9 +96,7 @@ def main():
         command('/usr/bin/codesign', '--verify', '--deep', '--strict', str(app),
                 stage='bundle integrity')
         # Apple-anchored distribution certificate, not an ad-hoc placeholder.
-        command('/usr/bin/codesign', '--verify', '-R',
-                'anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.4] exists',
-                str(app), stage='Apple distribution trust')
+        verify_distribution_trust(app)
     digest = hashlib.sha256(args.ipa.read_bytes()).hexdigest()
     report = {'build': args.build, 'bundle': BUNDLE, 'appleLogin': 'Default',
               'signatureAndProfileValidated': True, 'sha256': digest}

@@ -8,7 +8,7 @@ import plistlib
 import shutil
 from pathlib import Path
 
-from verify_testflight_signing import validate, extract_ipa, command
+from verify_testflight_signing import validate, extract_ipa, command, verify_distribution_trust
 
 
 class DiagnosticTests(unittest.TestCase):
@@ -48,6 +48,10 @@ class ArchiveEntitlementTests(unittest.TestCase):
                 '/usr/bin/codesign', '-d', '--entitlements', ':-', str(app)],
                 stderr=subprocess.DEVNULL))
             self.assertEqual(ent.get('com.apple.developer.applesignin'), ['Default'])
+            # The requirement must parse and reject ad-hoc signing for the right
+            # reason, not treat its expression as a nonexistent filename.
+            with self.assertRaisesRegex(ValueError, 'failed to satisfy specified code requirement'):
+                verify_distribution_trust(app)
 
 
 @unittest.skipUnless(os.path.exists('/usr/bin/ditto'), 'macOS archive metadata test')
