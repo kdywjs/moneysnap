@@ -45,6 +45,7 @@ Local Xcode 27 unsigned archive succeeds and codesign confirms no signature. Thi
 - PR #36 and main CI passed. Build 24 (35948415764) provides concrete evidence: signed Apple-login entitlement absent, embedded profile Apple-login entitlement present. Upload blocked before signature integrity/trust checks; build 21 itself remains unavailable for retrospective inspection.
 - Preserve the source capabilities in an intermediate ad-hoc archive signature before exportArchive; Apple Distribution export and all final gates remain mandatory. No certificate/private key creation, portal mutation or new credentials. Added a real codesign fixture regression test (RED: script absent; GREEN expected after implementation).
 - GREEN: all 10 tests pass. Actual locally-built MoneySnap device archive also retains Apple-login entitlement after the preservation script and passes strict codesign verification. Final Apple Distribution export still needs CI confirmation.
+- PR #37 and main CI passed. Build 25 (35951965645) confirms both signed/profile Apple-login entitlements are present and identity/distribution metadata plus strict integrity pass. Upload was blocked by the trust command's argument syntax: `-R expression` treats the expression as a filename; inline expressions need `-R=expression`. Reproduced locally, corrected without weakening the requirement, and added real ad-hoc fixture rejection coverage.
 
 ## Agent rules impact
 - no: existing security boundaries, environments and deployment approval remain unchanged. AGENTS.md unchanged.
