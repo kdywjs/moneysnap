@@ -40,6 +40,8 @@ Local Xcode 27 unsigned archive succeeds and codesign confirms no signature. Thi
 - Deployment 35944513185 (build 22) archived/exported successfully but codesign validation stopped upload. No new TestFlight build uploaded.
 - Validator extraction bug reproduced locally: an ad-hoc signed archive passes strict verification before ZIP, fails after Python extractall, and passes after macOS ditto extraction. Build 22 does not establish a production signature defect or missing Apple-login entitlement.
 - Follow-up RED: metadata-preserving extraction regression test fails before implementation; GREEN: all 7 tests pass after using ditto. Strict verification of the extracted signed fixture also passes. Signature/capability gates remain enforced.
+- PR #35 and its main CI passed. Build 23 (35946297825) exported successfully, but a codesign verification still failed. Since the message did not distinguish integrity from certificate requirements, neither a signature defect nor entitlement omission is established.
+- Further diagnostics read capability metadata before the still-mandatory signature gates, print only capability booleans, and classify allowlisted failure categories with distinct stage labels. No raw command stderr/profile data is exposed. All 9 tests pass, including diagnostic redaction tests.
 
 ## Agent rules impact
 - no: existing security boundaries, environments and deployment approval remain unchanged. AGENTS.md unchanged.

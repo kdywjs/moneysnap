@@ -1,11 +1,29 @@
 import copy
 import unittest
+from unittest.mock import patch
 import os
 import subprocess
 import tempfile
 from pathlib import Path
 
-from verify_testflight_signing import validate, extract_ipa
+from verify_testflight_signing import validate, extract_ipa, command
+
+
+class DiagnosticTests(unittest.TestCase):
+    def test_failure_reports_stage_and_allowlisted_category_only(self):
+        result = subprocess.CompletedProcess([], 1, b'',
+                    b'/private/sensitive-path: a sealed resource is missing or invalid')
+        with patch('verify_testflight_signing.subprocess.run', return_value=result):
+            with self.assertRaises(ValueError) as caught:
+                command('/usr/bin/codesign', '--verify', stage='bundle integrity')
+        self.assertEqual(str(caught.exception),
+                         'bundle integrity failed: a sealed resource is missing or invalid')
+
+    def test_unknown_error_does_not_leak_output(self):
+        result = subprocess.CompletedProcess([], 1, b'', b'sensitive details')
+        with patch('verify_testflight_signing.subprocess.run', return_value=result):
+            with self.assertRaisesRegex(ValueError, '^inspection failed: unclassified$'):
+                command('/usr/bin/codesign', '--verify')
 
 
 @unittest.skipUnless(os.path.exists('/usr/bin/ditto'), 'macOS archive metadata test')

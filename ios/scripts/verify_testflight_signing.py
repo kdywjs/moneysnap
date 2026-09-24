@@ -36,9 +36,19 @@ def validate(info, ent, profile, team, build):
             'not an App Store distribution profile')
 
 
-def command(*args):
+def command(*args, stage='inspection'):
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    require(result.returncode == 0, 'signing inspection command failed: ' + ' '.join(args[:2]))
+    if result.returncode != 0:
+        # Only allowlisted error categories are emitted, never raw command output.
+        stderr = result.stderr.decode('utf-8', errors='replace').lower()
+        categories = ['a sealed resource is missing or invalid',
+                      'code object is not signed at all',
+                      'failed to satisfy code requirement',
+                      'cssmerr_tp_not_trusted', 'certificate expired',
+                      'invalid signature', 'unsealed contents',
+                      'resource fork', 'code has no resources']
+        category = next((item for item in categories if item in stderr), 'unclassified')
+        raise ValueError(stage + ' failed: ' + category)
     return result.stdout
 
 
@@ -48,7 +58,7 @@ def extract_ipa(ipa, root):
                     for n in package.namelist()), 'unsafe IPA entry')
     # zipfile.extractall loses executable permissions and symlinks, invalidating
     # an otherwise valid code signature. Preserve Apple's bundle metadata.
-    command('/usr/bin/ditto', '-x', '-k', str(ipa), str(root))
+    command('/usr/bin/ditto', '-x', '-k', str(ipa), str(root), stage='IPA extraction')
 
 
 def main():
@@ -65,15 +75,21 @@ def main():
         apps = [path for path in (root / 'Payload').glob('*.app') if path.is_dir()]
         require(len(apps) == 1, 'expected exactly one application')
         app = apps[0]
-        command('/usr/bin/codesign', '--verify', '--deep', '--strict', str(app))
+        ent = plistlib.loads(command('/usr/bin/codesign', '-d', '--entitlements', ':-', str(app),
+                                    stage='read signed entitlements'))
+        profile = plistlib.loads(command('/usr/bin/security', 'cms', '-D', '-i',
+                                        str(app / 'embedded.mobileprovision'), stage='read embedded profile'))
+        info = plistlib.loads((app / 'Info.plist').read_bytes())
+        print('Apple login entitlement present: signed=' +
+              str(ent.get(APPLE_LOGIN) == ['Default']) + ', profile=' +
+              str('Default' in profile.get('Entitlements', {}).get(APPLE_LOGIN, [])))
+        validate(info, ent, profile, args.team, args.build)
+        command('/usr/bin/codesign', '--verify', '--deep', '--strict', str(app),
+                stage='bundle integrity')
         # Apple-anchored distribution certificate, not an ad-hoc placeholder.
         command('/usr/bin/codesign', '--verify', '-R',
-                'anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.4] exists', str(app))
-        ent = plistlib.loads(command('/usr/bin/codesign', '-d', '--entitlements', ':-', str(app)))
-        profile = plistlib.loads(command('/usr/bin/security', 'cms', '-D', '-i',
-                                        str(app / 'embedded.mobileprovision')))
-        info = plistlib.loads((app / 'Info.plist').read_bytes())
-        validate(info, ent, profile, args.team, args.build)
+                'anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.4] exists',
+                str(app), stage='Apple distribution trust')
     digest = hashlib.sha256(args.ipa.read_bytes()).hexdigest()
     report = {'build': args.build, 'bundle': BUNDLE, 'appleLogin': 'Default',
               'signatureAndProfileValidated': True, 'sha256': digest}
