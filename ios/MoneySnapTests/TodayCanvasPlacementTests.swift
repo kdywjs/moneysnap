@@ -48,6 +48,7 @@ struct TodayCanvasPlacementTests {
         let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
         scene.didMove(to: SKView())
         let oldCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        let gravity = scene.physicsWorld.gravity
         oldCard.position = CGPoint(x: 90, y: 90)
 
         scene.replayDrop()
@@ -55,7 +56,7 @@ struct TodayCanvasPlacementTests {
         let newCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
         #expect(newCard !== oldCard)
         #expect(newCard.position.y > 90)
-        #expect(scene.physicsWorld.gravity == TodayCanvasPhysics.defaultGravity)
+        #expect(scene.physicsWorld.gravity == gravity)
     }
 
     @Test @MainActor

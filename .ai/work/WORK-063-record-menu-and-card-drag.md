@@ -51,7 +51,7 @@ git diff --check
 ## Evidence
 
 - 실행 명령: `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`
-- 결과: Windows 정적 검증 2건 통과, diff whitespace 통과. macOS native/UI·4화면 시각 검증은 PR CI 대기.
+- 결과: Windows 정적 검증 2건 통과, diff whitespace 통과. PR CI `36016410388`에서 XCUITest 10건 통과, 새 낙하 재생 단위 테스트 1건 실패. 센서 중력 변화를 허용하도록 초기 중력 고정 단정을 재생 전후 동일성으로 수정했고 재검증 대기.
 - 리뷰: Figma `9:2` design context와 기존 라이브 SpriteKit 카드 비교 완료. 카드 전체 흰 surface가 기준과 달라 제거.
 
 ## Agent rules impact
