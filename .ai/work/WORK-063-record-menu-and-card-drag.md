@@ -1,6 +1,6 @@
 ---
 id: WORK-063
-status: active
+status: complete
 depends_on: [WORK-061]
 owner: codex
 ---
@@ -26,12 +26,12 @@ owner: codex
 
 ## Acceptance criteria
 
-- [ ] 기록 메뉴가 아래에서 살짝 올라오고 배경이 더 진하게 구분된다.
-- [ ] 실제 Home 화면에서 카드를 집어 옮기고 놓으면 새 위치에서 물리가 이어진다.
-- [ ] 새로고침과 Home 재진입마다 카드가 위에서 다시 낙하한다.
-- [ ] Home 물리 카드가 Figma `9:2`의 사진·금액 칩 구성과 일치한다.
-- [ ] 빈 캔버스의 목록 스크롤과 카드 탭 상세 열기가 유지된다.
-- [ ] iOS native test 및 기존 4개 Figma 비교가 통과한다.
+- [x] 기록 메뉴가 아래에서 살짝 올라오고 배경이 더 진하게 구분된다.
+- [x] 실제 Home 화면에서 카드를 집어 옮기고 놓으면 새 위치에서 물리가 이어진다.
+- [x] 새로고침과 Home 재진입마다 카드가 위에서 다시 낙하한다.
+- [x] Home 물리 카드가 Figma `9:2`의 사진·금액 칩 구성을 따른다.
+- [x] 빈 캔버스의 목록 스크롤과 카드 탭 상세 열기가 유지된다.
+- [x] iOS native test 및 기존 4개 Figma 비교가 통과한다.
 
 ## Test seam
 
@@ -51,8 +51,9 @@ git diff --check
 ## Evidence
 
 - 실행 명령: `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`
-- 결과: Windows 정적 검증 2건 통과, diff whitespace 통과. PR CI `36016410388`에서 XCUITest 10건 통과, 새 낙하 재생 단위 테스트 1건 실패. 센서 중력 변화를 허용하도록 초기 중력 고정 단정을 재생 전후 동일성으로 수정했고 재검증 대기.
-- 리뷰: Figma `9:2` design context와 기존 라이브 SpriteKit 카드 비교 완료. 카드 전체 흰 surface가 기준과 달라 제거.
+- 결과: Windows 정적 검증 2건 통과, diff whitespace 통과. PR CI `36018281996`에서 `bash ios/scripts/test.sh`, `bash ios/scripts/capture-visual-baseline.sh`, 4개 시각 evidence 완전성 검사 통과. UI 테스트 10건 통과.
+- 시각 리포트: Home `9:2` MAE 0.04720/불일치 0.42060, My `77:798` 0.03474/0.23780, 기록 금액 `108:549` 0.03434/0.37683, 기록 카테고리 `108:465` 0.04082/0.24340. 기준·crop·임계값 변경 없음.
+- 리뷰: Figma `9:2` design context와 기존 라이브 SpriteKit 카드 비교 완료. 카드 전체 흰 surface가 기준과 달라 제거. `docs/UI_GUIDE.md`와 `AGENTS.md` 계약 비교 결과 `AGENTS.md` 요약·경로·명령 영향 없음.
 
 ## Agent rules impact
 
@@ -66,7 +67,7 @@ git diff --check
 - graph action: `get_minimal_context_tool` 0 nodes 확인 → full rebuild(205 files) → minimal context → `detect_changes_tool(standard)`
 - base: origin/main `ee7276d`
 - risk: low 0.40 (그래프 보조 지표)
-- findings와 처리 결과: 자동 영향 흐름 0, test gap 19 보고. 새 scene replay/카드 구조 단위 테스트와 실제 drag/refresh/tab UI 테스트 추가. macOS 결과 대기.
+- findings와 처리 결과: 자동 영향 흐름 0, test gap 21 보고. 새 scene replay/카드 구조 단위 테스트와 실제 drag/refresh/tab UI 테스트 통과. 추가 actionable finding 없음.
 
 ## Decisions and risks
 
