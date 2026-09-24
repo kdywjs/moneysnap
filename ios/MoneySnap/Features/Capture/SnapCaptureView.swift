@@ -219,10 +219,8 @@ struct SnapCaptureView: View {
 
                 keypad
                     .frame(maxWidth: .infinity)
-                    .padding(.top, model.failure == nil ? 20 : 8)
-
-                submitButton
-                    .padding(.top, 12)
+                    .offset(x: -10)
+                    .padding(.top, model.failure == nil ? 13 : 8)
             }
             .padding(.horizontal, 24)
             .padding(.top, 20)
@@ -385,29 +383,37 @@ struct SnapCaptureView: View {
         LazyVGrid(
             columns: Array(repeating: model.layout == .combined
                 ? GridItem(.flexible(), spacing: 8) : GridItem(.fixed(87), spacing: 15), count: 3),
-            spacing: model.layout == .combined ? 8 : 11
+            spacing: model.layout == .combined ? 8 : 10
         ) {
             ForEach([1, 2, 3, 4, 5, 6, 7, 8, 9], id: \.self) { digit in
                 digitButton(digit)
             }
 
-            Button { model.clearAmount() } label: {
-                Text("C")
+            Button { model.layout == .staged ? model.deleteDigit() : model.clearAmount() } label: {
+                Text(model.layout == .staged ? "지움" : "C")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(CaptureKeyButtonStyle())
-            .accessibilityLabel("금액 지우기")
-            .accessibilityIdentifier("record.clear")
+            .accessibilityLabel(model.layout == .staged ? "한 자리 지우기" : "금액 지우기")
+            .accessibilityIdentifier(model.layout == .staged ? "record.delete" : "record.clear")
 
             digitButton(0)
 
-            Button { model.deleteDigit() } label: {
-                Text("지움")
-                    .frame(maxWidth: .infinity, minHeight: 44)
+            if model.layout == .staged {
+                Button { Task { await submit() } } label: {
+                    Text(model.submitTitle).frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(CaptureKeyButtonStyle(isPrimary: true))
+                .disabled(!model.canSubmit)
+                .accessibilityIdentifier("record.submit")
+            } else {
+                Button { model.deleteDigit() } label: {
+                    Text("지움").frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(CaptureKeyButtonStyle())
+                .accessibilityLabel("한 자리 지우기")
+                .accessibilityIdentifier("record.delete")
             }
-            .buttonStyle(CaptureKeyButtonStyle())
-            .accessibilityLabel("한 자리 지우기")
-            .accessibilityIdentifier("record.delete")
         }
     }
 
