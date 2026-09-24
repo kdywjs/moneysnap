@@ -102,7 +102,7 @@ enum SnapArtwork: String, Equatable, Sendable {
     var canvasLongestSide: CGFloat {
         switch self {
         case .food: 144
-        case .cafe: 150
+        case .cafe: 165
         }
     }
 }

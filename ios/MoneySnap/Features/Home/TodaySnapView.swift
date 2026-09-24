@@ -211,7 +211,7 @@ private struct TodaySnapContent: View {
                 Circle().fill(index == page ? MoneySnapVisualSystem.ink : MoneySnapVisualSystem.lightGray).frame(width: 5, height: 5)
             }
         }
-        .frame(minWidth: 45, minHeight: 20).padding(.horizontal, 10).background(.white, in: Capsule()).shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .frame(width: 45, height: 20).background(.white, in: Capsule()).shadow(color: .black.opacity(0.12), radius: 8, y: 4)
         .position(x: availableWidth / 2, y: 503).accessibilityIdentifier("home.pager").opacity(isVisualHome || count > 1 ? 1 : 0)
     }
 
