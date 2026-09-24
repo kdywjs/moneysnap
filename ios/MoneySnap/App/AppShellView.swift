@@ -250,7 +250,7 @@ struct AppShellView: View {
         .frame(maxHeight: .infinity, alignment: .bottom)
     }
 
-    private func sourceVisual(_ title: String, symbol: String, dark: Bool = false) -> some View {
+    nonisolated private func sourceVisual(_ title: String, symbol: String, dark: Bool = false) -> some View {
         VStack(spacing: 8) {
             Image(systemName: symbol)
                 .font(.system(size: 25, weight: .medium))
