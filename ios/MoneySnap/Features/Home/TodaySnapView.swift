@@ -38,6 +38,7 @@ struct TodaySnapView: View {
                                     .padding(.top, 72)
                             }
                         }
+                }
             case .failure:
                 ContentUnavailableView {
                     Label("오늘 기록을 불러오지 못했어요", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
