@@ -8,6 +8,8 @@ struct TodaySnapView: View {
     var groups: [MoneySnapGroup] = []
     var groupClient: (any GroupClient)?
     var media: (any MediaClient)?
+    var dropGeneration = 0
+    var onRefresh: () -> Void = {}
 
     var body: some View {
         ZStack {
@@ -28,8 +30,11 @@ struct TodaySnapView: View {
                             .accessibilityIdentifier("home.record")
                     }
                 } else {
-                    TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media)
-                        .refreshable { await viewModel.refresh() }
+                    TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media, dropGeneration: dropGeneration)
+                        .refreshable {
+                            await viewModel.refresh()
+                            onRefresh()
+                        }
                         .overlay(alignment: .top) {
                             if viewModel.refreshFailure {
                                 Button("다시 불러오기") { Task { await viewModel.retry() } }
@@ -62,8 +67,10 @@ private struct TodaySnapContent: View {
     var groups: [MoneySnapGroup] = []
     var groupClient: (any GroupClient)?
     var media: (any MediaClient)?
+    let dropGeneration: Int
     @State private var page = 0
     @State private var groupEntries: [UUID: [TodaySnapEntry]] = [:]
+    @State private var isHoldingCard = false
 
     private var orderedGroups: [MoneySnapGroup] { GroupCanvasOrder.apply(groups) }
     private var pageCount: Int { 1 + orderedGroups.count }
@@ -79,6 +86,7 @@ private struct TodaySnapContent: View {
                         .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .topLeading)
                 }
                 .scrollBounceBehavior(.basedOnSize)
+                .scrollDisabled(isHoldingCard)
                 .accessibilityIdentifier("home.recent.scroll")
             }
         }
@@ -131,7 +139,9 @@ private struct TodaySnapContent: View {
                 onOpen: onOpen
             )
         } else {
-            TodaySnapPhysicsCanvas(entries: summary.entries, onSelect: onOpen)
+            TodaySnapPhysicsCanvas(entries: summary.entries, onSelect: onOpen, dropGeneration: dropGeneration) {
+                isHoldingCard = $0
+            }
                 .frame(width: size.width, height: 310)
                 .offset(y: 86)
         }

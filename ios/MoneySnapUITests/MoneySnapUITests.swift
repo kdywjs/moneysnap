@@ -146,6 +146,30 @@ final class MoneySnapUITests: XCTestCase {
     }
 
     @MainActor
+    func testHomeCardCanBeDraggedAndDropsAgainAfterRefreshAndTabReturn() {
+        let app = XCUIApplication()
+        app.launchEnvironment["MONEYSNAP_FEATURE_SCENARIO"] = "today-many"
+        app.launch()
+
+        let canvas = app.otherElements["home.physics-canvas"]
+        XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+        let start = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.36, dy: 0.78))
+        let end = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.55, dy: 0.48))
+        start.press(forDuration: 0.3, thenDragTo: end)
+        XCTAssertTrue(canvas.value as? String == "이동 1회, 낙하 1회")
+
+        let scroll = app.scrollViews["home.recent.scroll"]
+        scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.14))
+            .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.65)))
+        XCTAssertTrue((canvas.value as? String)?.contains("낙하 2회") == true)
+
+        app.buttons["tab.archive"].tap()
+        app.buttons["tab.home"].tap()
+        XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+        XCTAssertTrue((canvas.value as? String)?.contains("낙하 3회") == true)
+    }
+
+    @MainActor
     func testUnknownFeatureScenarioFailsClosed() {
         let app = XCUIApplication()
         app.launchEnvironment["MONEYSNAP_FEATURE_SCENARIO"] = "unknown"

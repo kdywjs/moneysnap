@@ -8,14 +8,21 @@ struct TodaySnapPhysicsCanvas: View {
 
     let entries: [TodaySnapEntry]
     let onSelect: (TodaySnapEntry.ID) -> Void
+    let dropGeneration: Int
+    let onHoldChanged: (Bool) -> Void
     @State private var scene: TodaySnapPhysicsScene
+    @State private var dragCount = 0
 
     init(
         entries: [TodaySnapEntry],
-        onSelect: @escaping (TodaySnapEntry.ID) -> Void
+        onSelect: @escaping (TodaySnapEntry.ID) -> Void,
+        dropGeneration: Int = 0,
+        onHoldChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         self.entries = entries
         self.onSelect = onSelect
+        self.dropGeneration = dropGeneration
+        self.onHoldChanged = onHoldChanged
         _scene = State(initialValue: TodaySnapPhysicsScene(
             entries: entries,
             onSelect: onSelect
@@ -31,12 +38,18 @@ struct TodaySnapPhysicsCanvas: View {
                 ZStack {
                     SpriteView(scene: scene, options: [.allowsTransparency])
                         .accessibilityIdentifier("home.physics-canvas")
+                        .accessibilityValue("이동 \(dragCount)회, 낙하 \(dropGeneration + 1)회")
                     accessibilityBridge
                 }
             }
         }
         .onChange(of: entries) { _, updatedEntries in
             scene.replaceEntries(updatedEntries)
+        }
+        .onChange(of: dropGeneration) { _, _ in scene.replayDrop() }
+        .onAppear {
+            scene.onHoldChanged = onHoldChanged
+            scene.onDragComplete = { dragCount += 1 }
         }
     }
 
@@ -63,6 +76,8 @@ final class TodaySnapPhysicsScene: SKScene {
     private var cardOrigin = CGPoint.zero
     private var originalZPosition: CGFloat = 0
     private var isDragging = false
+    var onHoldChanged: (Bool) -> Void = { _ in }
+    var onDragComplete: () -> Void = {}
 
     init(
         entries: [TodaySnapEntry],
@@ -112,6 +127,8 @@ final class TodaySnapPhysicsScene: SKScene {
         rebuildScene()
     }
 
+    func replayDrop() { rebuildScene() }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         beginInteraction(at: touch.location(in: self))
@@ -124,6 +141,7 @@ final class TodaySnapPhysicsScene: SKScene {
         cardOrigin = node.position
         originalZPosition = node.zPosition
         isDragging = false
+        onHoldChanged(true)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -157,12 +175,14 @@ final class TodaySnapPhysicsScene: SKScene {
             node.physicsBody?.isDynamic = true
             node.physicsBody?.velocity = .zero
             node.zPosition = originalZPosition
+            onDragComplete()
         } else if let name = node.name,
                   let id = UUID(uuidString: String(name.dropFirst("snap:".count))) {
             onSelect(id)
         }
         draggedNode = nil
         isDragging = false
+        onHoldChanged(false)
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -173,10 +193,14 @@ final class TodaySnapPhysicsScene: SKScene {
         }
         draggedNode = nil
         isDragging = false
+        onHoldChanged(false)
     }
 
     private func rebuildScene() {
         guard size.width > 100, size.height > 100 else { return }
+        draggedNode = nil
+        isDragging = false
+        onHoldChanged(false)
         removeAllChildren()
         physicsBody = SKPhysicsBody(edgeLoopFrom: CGRect(
             x: 5,
@@ -210,56 +234,52 @@ final class TodaySnapPhysicsScene: SKScene {
     private func makeCard(for entry: TodaySnapEntry, size: CGSize) -> SKNode {
         let card = SKNode()
         card.name = "snap:\(entry.id.uuidString)"
-
-        let surface = SKShapeNode(rectOf: size, cornerRadius: 15)
-        surface.fillColor = .white
-        surface.strokeColor = UIColor.black.withAlphaComponent(0.08)
-        surface.lineWidth = 1
-        surface.zPosition = -1
-        card.addChild(surface)
-
-        let mediaSize = CGSize(width: size.width - 12, height: size.height - 38)
+        let isPortrait = size.height > size.width
+        let hasPhoto = entry.artwork != nil || entry.previewJPEG != nil
+        let mediaSize = isPortrait
+            ? CGSize(width: size.width * 0.7, height: size.height * 0.74)
+            : CGSize(width: size.width, height: size.height * 0.78)
         if let artwork = entry.artwork {
             let crop = artworkNode(named: artwork.rawValue, size: mediaSize)
-            crop.position.y = 13
+            crop.name = "photo"
+            crop.position.y = isPortrait ? 14 : 12
+            crop.zRotation = isPortrait ? -0.13 : 0.13
             card.addChild(crop)
         } else if let jpeg = entry.previewJPEG, let image = UIImage(data: jpeg) {
             let crop = artworkNode(image: image, size: mediaSize)
-            crop.position.y = 13
+            crop.name = "photo"
+            crop.position.y = isPortrait ? 14 : 12
+            crop.zRotation = isPortrait ? -0.13 : 0.13
             card.addChild(crop)
-        } else if let symbol = UIImage(systemName: entry.category.placeholderSymbol) {
-            let tile = SKShapeNode(rectOf: mediaSize, cornerRadius: 11)
-            tile.fillColor = UIColor(MoneySnapVisualSystem.profileNeutralFill)
-            tile.strokeColor = .clear
-            tile.position.y = 13
-            card.addChild(tile)
-
-            let icon = SKSpriteNode(texture: SKTexture(image: symbol))
-            let side = min(mediaSize.width, mediaSize.height) * 0.38
-            icon.size = CGSize(width: side, height: side)
-            icon.color = UIColor(MoneySnapVisualSystem.charcoal)
-            icon.colorBlendFactor = 1
-            icon.position.y = 13
-            card.addChild(icon)
         }
+        if entry.revealsAmount {
+            let chipPosition = CGPoint(x: hasPhoto ? min(14, size.width / 8) : 0, y: hasPhoto ? -size.height / 2 + 23 : 0)
+            let chip = SKShapeNode(rectOf: CGSize(width: 112, height: 50), cornerRadius: 15)
+            chip.name = "amount-chip"
+            chip.fillColor = UIColor.white.withAlphaComponent(0.68)
+            chip.strokeColor = UIColor.white.withAlphaComponent(0.58)
+            chip.lineWidth = 1
+            chip.position = chipPosition
+            chip.zRotation = hasPhoto ? (isPortrait ? -0.14 : 0.12) : -0.07
+            let category = SKLabelNode(fontNamed: "NotoSansKR-Medium")
+            category.text = entry.category.title
+            category.fontSize = 9
+            category.fontColor = UIColor(MoneySnapVisualSystem.secondaryText)
+            category.horizontalAlignmentMode = .center
+            category.verticalAlignmentMode = .center
+            category.position.y = -11
+            chip.addChild(category)
 
-        let category = SKLabelNode(fontNamed: "NotoSansKR-Medium")
-        category.text = entry.category.title
-        category.fontSize = 9
-        category.fontColor = UIColor(MoneySnapVisualSystem.secondaryText)
-        category.horizontalAlignmentMode = .left
-        category.verticalAlignmentMode = .center
-        category.position = CGPoint(x: -size.width / 2 + 9, y: -size.height / 2 + 13)
-        card.addChild(category)
-
-        let amount = SKLabelNode(fontNamed: "NotoSansKR-Bold")
-        amount.text = entry.amount.value.wonText
-        amount.fontSize = size.width >= 140 ? 14 : 12
-        amount.fontColor = UIColor(MoneySnapVisualSystem.ink)
-        amount.horizontalAlignmentMode = .right
-        amount.verticalAlignmentMode = .center
-        amount.position = CGPoint(x: size.width / 2 - 9, y: -size.height / 2 + 13)
-        card.addChild(amount)
+            let amount = SKLabelNode(fontNamed: "NotoSansKR-Bold")
+            amount.text = entry.amount.value.wonText
+            amount.fontSize = 17
+            amount.fontColor = UIColor(MoneySnapVisualSystem.priceText)
+            amount.horizontalAlignmentMode = .center
+            amount.verticalAlignmentMode = .center
+            amount.position.y = 7
+            chip.addChild(amount)
+            card.addChild(chip)
+        }
 
         card.physicsBody = SKPhysicsBody(rectangleOf: size)
         card.physicsBody?.density = 0.72
@@ -280,7 +300,7 @@ final class TodaySnapPhysicsScene: SKScene {
 
     private func artworkNode(image: UIImage, size: CGSize) -> SKCropNode {
         let crop = SKCropNode()
-        let mask = SKShapeNode(rectOf: size, cornerRadius: 11)
+        let mask = SKShapeNode(rectOf: size, cornerRadius: size.height > size.width ? 14 : 19)
         mask.fillColor = .white
         mask.strokeColor = .clear
         crop.maskNode = mask

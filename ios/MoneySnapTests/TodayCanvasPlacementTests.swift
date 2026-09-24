@@ -12,7 +12,7 @@ struct TodayCanvasPlacementTests {
         scene.didMove(to: SKView())
         let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
         let start = card.position
-        let captionPoint = CGPoint(x: start.x + 35, y: start.y - 35)
+        let captionPoint = CGPoint(x: start.x + 35, y: start.y - 10)
 
         scene.beginInteraction(at: captionPoint)
         scene.endInteraction(at: captionPoint)
@@ -40,6 +40,35 @@ struct TodayCanvasPlacementTests {
         scene.endInteraction(at: moved)
         #expect(card.physicsBody?.isDynamic == true)
         #expect(card.physicsBody?.velocity == .zero)
+    }
+
+    @Test @MainActor
+    func replayRecreatesCardsAtTheTopWithTheSameEntries() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900))
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
+        scene.didMove(to: SKView())
+        let oldCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        let gravity = scene.physicsWorld.gravity
+        oldCard.position = CGPoint(x: 90, y: 90)
+
+        scene.replayDrop()
+
+        let newCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        #expect(newCard !== oldCard)
+        #expect(newCard.position.y > 90)
+        #expect(scene.physicsWorld.gravity == gravity)
+    }
+
+    @Test @MainActor
+    func physicsCardUsesPhotoAndFloatingAmountChip() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900), artwork: .food)
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
+        scene.didMove(to: SKView())
+        let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+
+        #expect(card.childNode(withName: "photo") != nil)
+        #expect(card.childNode(withName: "amount-chip") != nil)
+        #expect(card.childNode(withName: "card-surface") == nil)
     }
 
     @Test
