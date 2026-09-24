@@ -27,13 +27,13 @@ Figma 기록 quick menu, 한 화면에서 끝나는 입력, 보관함 빈 날짜
 
 ## Acceptance criteria
 
-- [ ] 두 진입점에서 플로팅 세 액션을 보여주고 촬영·앨범·사진 없음 경로가 연결된다.
-- [ ] 입력 화면의 카테고리, 금액, 완료/다음이 393x852에서 스크롤 없이 보인다.
-- [ ] 저장 중 진행 상태를 표시하고 중복 제출·불명확한 retry의 안전성은 유지한다.
-- [ ] 기록 없는 날짜는 오류로 표시하지 않고 명확한 빈 상태를 보여준다.
+- [x] 두 진입점에서 플로팅 세 액션을 보여주고 촬영·앨범·사진 없음 경로가 연결된다.
+- [x] 입력 화면의 카테고리, 금액, 완료/다음이 393x852에서 스크롤 없이 보인다.
+- [x] 저장 중 진행 상태를 표시하고 중복 제출·불명확한 retry의 안전성은 유지한다.
+- [x] 기록 없는 날짜는 오류로 표시하지 않고 명확한 빈 상태를 보여준다.
 - [ ] macOS native test와 승인된 시각 검증을 통과한다.
-- [ ] 카드의 금액·카테고리 부분을 탭해도 튀지 않고 상세로 열리며, 끌어 옮긴 뒤 놓으면 자연스럽게 떨어진다.
-- [ ] 상단·하단에 검은 띠가 생기지 않고 탭 바에 시스템 반투명 재질을 사용한다.
+- [x] 카드의 금액·카테고리 부분을 탭해도 튀지 않고 상세로 열리며, 끌어 옮긴 뒤 놓으면 자연스럽게 떨어진다.
+- [x] 상단·하단에 검은 띠가 생기지 않고 탭 바에 시스템 반투명 재질을 사용한다.
 
 ## Test seam
 
@@ -54,7 +54,8 @@ git diff --check
 ## Evidence
 
 - 실행 명령: `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`; code-review-graph full build → minimal context → standard detect changes
-- 결과: `git diff --check` exit 0. 두 Windows validator는 변경하지 않은 `ios/scripts/test-validate-visual-baseline.ps1`의 reviewed manifest probe / capture build-once 계약에서 실패했다. macOS native/visual CI는 PR에서 실행 예정이다.
+- 결과: `git diff --check` exit 0. 두 Windows validator는 변경하지 않은 `ios/scripts/test-validate-visual-baseline.ps1`의 reviewed manifest probe / capture build-once 계약에서 실패했다. PR CI `35992048212`에서 macOS native test는 통과했다. 회귀 테스트 `tappingCardCaptionOpensDetailWithoutMovingTheCard`, `draggedCardKeepsTheGrabOffsetAndFallsWhenReleased`, 기록 완료 버튼 UI 테스트를 확인했다.
+- 시각 검증: 같은 CI가 성공으로 표시됐지만 `capture-visual-baseline.sh:135`의 빈 배열 확장 오류로 Home 첫 화면 캡처 뒤 중단됐다. 4개 시나리오의 diff/report가 없다. Home 화면의 상단·하단은 캡처에서 밝게 보이며 native material 탭 바가 보인다. 수동 RGB diff의 Home MAE는 0.0624, mismatch 0.4234이고 승인 임계값 0.05/0.43을 아직 통과하지 못했다. 기존 main 캡처도 같은 오류와 MAE 0.0618을 보였다.
 - 리뷰: 최신 main을 기준으로 isolated worktree를 만들고, 기존 사진 publish와 archive API를 재사용했다.
 
 ## Agent rules impact
@@ -66,12 +67,13 @@ git diff --check
 ## Code Review Graph
 
 - 코드 변경 여부: yes
-- graph action: full build (worktree에 그래프 부재, 205 files / 1816 nodes) 후 standard detect changes
+- graph action: full build (worktree에 그래프 부재, 205 files / 1816 nodes) 후 최신 커밋 `dc8700a`까지 incremental update와 standard detect changes
 - base: origin/main (1e50fc6)
 - risk: medium
-- findings와 처리 결과: high 0.75, AppShell photo entry와 archive request 경계의 test gap을 보고했다. UI/Archive 테스트와 macOS CI로 확인 중.
+- findings와 처리 결과: high 0.75, AppShell photo entry와 archive request 경계의 test gap을 보고했다. UI/Archive/Physics 테스트와 macOS native CI로 확인했다. 그래프의 Swift 테스트 인식 누락은 보조 증거로 취급한다.
 
 ## Decisions and risks
 
 - 사진 publish 및 계정 인증은 최신 main의 기존 경로를 재사용한다.
 - TestFlight는 성공한 main iOS CI 이후 별도 workflow가 업로드한다.
+- 시각 하네스의 빈 배열 오류는 기능 작업과 분리하며 AGENTS.md에 따라 사용자 승인 전 수정하지 않는다.
