@@ -1,6 +1,6 @@
 ---
 id: WORK-061
-status: active
+status: complete
 depends_on: [WORK-046, WORK-043]
 owner: codex
 ---
@@ -31,7 +31,7 @@ Figma 기록 quick menu, 한 화면에서 끝나는 입력, 보관함 빈 날짜
 - [x] 입력 화면의 카테고리, 금액, 완료/다음이 393x852에서 스크롤 없이 보인다.
 - [x] 저장 중 진행 상태를 표시하고 중복 제출·불명확한 retry의 안전성은 유지한다.
 - [x] 기록 없는 날짜는 오류로 표시하지 않고 명확한 빈 상태를 보여준다.
-- [ ] macOS native test와 승인된 시각 검증을 통과한다.
+- [x] macOS native test와 승인된 시각 검증을 통과한다.
 - [x] 카드의 금액·카테고리 부분을 탭해도 튀지 않고 상세로 열리며, 끌어 옮긴 뒤 놓으면 자연스럽게 떨어진다.
 - [x] 상단·하단에 검은 띠가 생기지 않고 탭 바에 시스템 반투명 재질을 사용한다.
 
@@ -55,7 +55,7 @@ git diff --check
 
 - 실행 명령: `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`; code-review-graph full build → minimal context → standard detect changes
 - 결과: `git diff --check` exit 0. 하네스 PR #40 병합 후 Windows validator 2건이 통과했다. PR CI `35998346981`의 macOS native test가 통과했고, 회귀 테스트 `tappingCardCaptionOpensDetailWithoutMovingTheCard`, `draggedCardKeepsTheGrabOffsetAndFallsWhenReleased`, 기록 완료 버튼 UI 테스트를 확인했다.
-- 시각 검증: PR #40의 하네스로 4개 시나리오의 diff/report가 모두 생성됐다. #39의 Home MAE `0.063219`, mismatch `0.423416`; My `0.034739`, category `0.048584`, amount `0.068398`. Home과 amount는 고정 MAE `0.05`를 초과해 CI가 실패했다. 금액 시나리오는 기존 단계형 modal을 캡처하며 새 전체화면 런타임을 캡처하지 않는다. Figma 고정 기준은 modal이므로 별도 anchor 결정이 필요하다. Home 버튼 위치·크기는 Figma 기준으로 조정하고 다시 검증한다.
+- 시각 검증: PR #40의 하네스로 4개 시나리오의 diff/report가 모두 생성됐다. 최종 PR CI `36004527557`에서 native test와 visual completeness gate 통과. Home MAE `0.048005`, mismatch `0.420597`; My `0.034739` / `0.237803`; record-category `0.040821` / `0.243403`; record-amount `0.034341` / `0.376831`. 네 시나리오의 overlay/diff/report 12개 존재 확인. 고정 MAE `0.05`, mismatch `0.43` 이내다. 기록 전체화면은 XCUITest로 393x852 완료 버튼 접근성과 저장 흐름을 검증한다. 사용자 결정에 따라 기존 Figma 기준 이미지·crop은 유지한다.
 - 리뷰: 최신 main을 기준으로 isolated worktree를 만들고, 기존 사진 publish와 archive API를 재사용했다.
 
 ## Agent rules impact
@@ -67,13 +67,14 @@ git diff --check
 ## Code Review Graph
 
 - 코드 변경 여부: yes
-- graph action: full build (worktree에 그래프 부재, 205 files / 1816 nodes) 후 최신 커밋 `dc8700a`까지 incremental update와 standard detect changes
+- graph action: full build (worktree에 그래프 부재, 205 files / 1816 nodes) 후 최신 코드 커밋 `fa3c842`까지 incremental update와 standard detect changes
 - base: origin/main (1e50fc6)
 - risk: medium
-- findings와 처리 결과: high 0.75, AppShell photo entry와 archive request 경계의 test gap을 보고했다. UI/Archive/Physics 테스트와 macOS native CI로 확인했다. 그래프의 Swift 테스트 인식 누락은 보조 증거로 취급한다.
+- findings와 처리 결과: high 0.75, AppShell photo entry와 archive request 경계의 test gap을 보고했다. UI/Archive/Physics 테스트와 macOS native CI `36004527557`로 확인했다. 그래프의 Swift 테스트 인식 누락은 보조 증거로 취급한다.
 
 ## Decisions and risks
 
 - 사진 publish 및 계정 인증은 최신 main의 기존 경로를 재사용한다.
 - TestFlight는 성공한 main iOS CI 이후 별도 workflow가 업로드한다.
 - 시각 하네스는 사용자 승인에 따라 별도 PR #40에서 수정·병합했다. 고정 Figma anchor는 변경하지 않았다.
+- 2026-09-24 사용자 결정에 따라 기존 modal Figma 기준 이미지·crop을 유지한다. 런타임 기록 입력은 전체화면이며 native UI test로 검증한다.
