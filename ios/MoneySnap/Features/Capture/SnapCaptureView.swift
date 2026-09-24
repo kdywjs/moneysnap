@@ -163,6 +163,7 @@ struct SnapCaptureView: View {
 
                 categoryGrid
                     .padding(.top, 16)
+                    .offset(x: -10)
             }
         }
         .scrollIndicators(.hidden)
