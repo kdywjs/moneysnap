@@ -1,6 +1,6 @@
 ---
 id: WORK-062
-status: active
+status: complete
 depends_on: [WORK-008]
 owner: codex
 ---
@@ -27,7 +27,7 @@ owner: codex
 - [x] Home/My/record-category/record-amount의 PNG overlay/diff와 report가 모두 생성된다.
 - [x] 어느 시나리오라도 report가 없거나 임계값을 넘으면 CI가 실패한다.
 - [x] Windows iOS project·visual validator가 통과한다.
-- [ ] 기능 PR #39와 분리된 PR에서 검증·병합한다.
+- [x] 기능 PR #39와 분리된 PR #40에서 검증·병합했다 (`db93f7b`).
 
 ## Test seam
 

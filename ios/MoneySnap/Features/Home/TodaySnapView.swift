@@ -16,16 +16,29 @@ struct TodaySnapView: View {
             case .loading:
                 ProgressView().accessibilityIdentifier("home.loading")
             case let .content(summary):
-                TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media)
-                    .refreshable { await viewModel.refresh() }
-                    .overlay(alignment: .top) {
-                        if viewModel.refreshFailure {
-                            Button("다시 불러오기") { Task { await viewModel.retry() } }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .accessibilityIdentifier("home.refresh-retry")
-                                .padding(.top, 72)
-                        }
+                if summary.entries.isEmpty {
+                    ContentUnavailableView {
+                        Label("이 날짜에는 Snap이 없어요", systemImage: "square.stack")
+                            .accessibilityIdentifier("screen.home")
+                    } description: {
+                        Text("첫 소비를 가볍게 남겨 보세요.")
+                    } actions: {
+                        Button("기록하기", action: onRecord)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .accessibilityIdentifier("home.record")
                     }
+                } else {
+                    TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media)
+                        .refreshable { await viewModel.refresh() }
+                        .overlay(alignment: .top) {
+                            if viewModel.refreshFailure {
+                                Button("다시 불러오기") { Task { await viewModel.retry() } }
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .accessibilityIdentifier("home.refresh-retry")
+                                    .padding(.top, 72)
+                            }
+                        }
+                }
             case .failure:
                 ContentUnavailableView {
                     Label("오늘 기록을 불러오지 못했어요", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
@@ -177,9 +190,9 @@ private struct TodaySnapContent: View {
 
     private func recordButton(availableWidth: CGFloat) -> some View {
         Button(action: onRecord) {
-            HStack(spacing: 10) {
-                Image(systemName: "plus").font(.system(size: 12, weight: .bold)).frame(width: 22, height: 22).foregroundStyle(.white).background(.white.opacity(0.18), in: Circle())
-                Text("기록하기").font(.moneySnap(size: 16, weight: .bold))
+            HStack(spacing: 12) {
+                Image(systemName: "plus").font(.system(size: 14, weight: .bold)).frame(width: 26, height: 26).foregroundStyle(.white).background(.white.opacity(0.18), in: Circle())
+                Text("기록하기").font(.moneySnap(size: 18, weight: .bold))
             }
             .foregroundStyle(.white)
             .frame(width: TodayCanvasPlacement.recordButtonWidth, height: TodayCanvasPlacement.recordButtonHeight)
@@ -198,7 +211,7 @@ private struct TodaySnapContent: View {
                 Circle().fill(index == page ? MoneySnapVisualSystem.ink : MoneySnapVisualSystem.lightGray).frame(width: 5, height: 5)
             }
         }
-        .frame(minWidth: 45, minHeight: 20).padding(.horizontal, 10).background(.white, in: Capsule()).shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .frame(width: 45, height: 20).background(.white, in: Capsule()).shadow(color: .black.opacity(0.12), radius: 8, y: 4)
         .position(x: availableWidth / 2, y: 503).accessibilityIdentifier("home.pager").opacity(isVisualHome || count > 1 ? 1 : 0)
     }
 

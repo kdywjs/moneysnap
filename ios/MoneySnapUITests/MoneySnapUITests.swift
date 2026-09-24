@@ -87,14 +87,13 @@ final class MoneySnapUITests: XCTestCase {
         let homeRecord = app.buttons["home.record"]
         XCTAssertTrue(homeRecord.waitForExistence(timeout: 5))
         homeRecord.tap()
+        XCTAssertTrue(app.buttons["record.source.camera"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["record.source.album"].exists)
+        app.buttons["record.source.none"].tap()
         XCTAssertTrue(element("screen.record.category", in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(element("record.category.prompt", in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["record.category.food"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["tab.home"].isSelected)
-        XCTAssertTrue(
-            occupiesLargeSheet(identifier: "screen.record.category", in: app),
-            "category and amount capture should fill most of the screen"
-        )
 
         app.buttons["record.category.food"].tap()
         XCTAssertFalse(element("record.category.prompt", in: app).exists)
@@ -104,6 +103,8 @@ final class MoneySnapUITests: XCTestCase {
             app.buttons["record.digit.\(digit)"].tap()
         }
         let submit = app.buttons["record.submit"]
+        XCTAssertTrue(submit.isHittable)
+        XCTAssertLessThanOrEqual(submit.frame.maxY, app.frame.maxY - 8)
         XCTAssertEqual(submit.label, "저장하기")
         XCTAssertNotEqual(submit.label, "저장 중")
         submit.tap()
@@ -117,6 +118,8 @@ final class MoneySnapUITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         XCTAssertGreaterThanOrEqual(add.frame.width, 44)
         XCTAssertGreaterThanOrEqual(add.frame.height, 44)
+        add.tap()
+        XCTAssertTrue(app.buttons["record.source.none"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -167,6 +170,7 @@ final class MoneySnapUITests: XCTestCase {
         XCTAssertEqual(homeRecord.label, "기록하기")
         XCTAssertTrue(homeRecord.isHittable)
         homeRecord.tap()
+        app.buttons["record.source.none"].tap()
 
         let lastCategory = app.buttons["record.category.other"]
         XCTAssertTrue(lastCategory.waitForExistence(timeout: 5))

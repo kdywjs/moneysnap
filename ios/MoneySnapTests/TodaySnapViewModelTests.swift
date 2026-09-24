@@ -54,6 +54,7 @@ struct TodaySnapViewModelTests {
         )
 
         #expect(largest.width == 144)
+        #expect(smaller == CGSize(width: 77, height: 102))
         #expect(smaller.width < largest.width)
     }
 

@@ -1,8 +1,47 @@
 import Foundation
+import SpriteKit
 import Testing
 @testable import MoneySnap
 
 struct TodayCanvasPlacementTests {
+    @Test @MainActor
+    func tappingCardCaptionOpensDetailWithoutMovingTheCard() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900))
+        var selected: UUID?
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { selected = $0 }
+        scene.didMove(to: SKView())
+        let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        let start = card.position
+        let captionPoint = CGPoint(x: start.x + 35, y: start.y - 35)
+
+        scene.beginInteraction(at: captionPoint)
+        scene.endInteraction(at: captionPoint)
+
+        #expect(card.position == start)
+        #expect(card.physicsBody?.isDynamic == true)
+        #expect(selected == entry.id)
+    }
+
+    @Test @MainActor
+    func draggedCardKeepsTheGrabOffsetAndFallsWhenReleased() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900))
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
+        scene.didMove(to: SKView())
+        let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        let start = card.position
+        let grab = CGPoint(x: start.x + 20, y: start.y - 10)
+        let moved = CGPoint(x: grab.x + 30, y: grab.y - 20)
+
+        scene.beginInteraction(at: grab)
+        scene.moveInteraction(to: moved)
+        #expect(card.position == CGPoint(x: start.x + 30, y: start.y - 20))
+        #expect(card.physicsBody?.isDynamic == false)
+
+        scene.endInteraction(at: moved)
+        #expect(card.physicsBody?.isDynamic == true)
+        #expect(card.physicsBody?.velocity == .zero)
+    }
+
     @Test
     func restCentersMatchTheReviewedHomeCanvas() {
         let width: CGFloat = 393
@@ -108,9 +147,10 @@ struct TodayCanvasPlacementTests {
     }
 
     @Test
-    func recordButtonIsAboutTwentyPercentSmallerThanTheOriginalCapsule() {
-        #expect(TodayCanvasPlacement.recordButtonWidth == 132)
-        #expect(TodayCanvasPlacement.recordButtonHeight == 51)
+    func recordButtonMatchesTheReviewedHomePlacement() {
+        #expect(TodayCanvasPlacement.recordButtonCenterY == 435)
+        #expect(TodayCanvasPlacement.recordButtonWidth == 164)
+        #expect(TodayCanvasPlacement.recordButtonHeight == 65)
         #expect(TodayCanvasPlacement.physicsFloorY < TodayCanvasPlacement.recordButtonCenterY - TodayCanvasPlacement.recordButtonHeight / 2)
     }
 

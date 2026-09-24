@@ -59,9 +59,10 @@ final class TodaySnapPhysicsScene: SKScene {
     private let onSelect: (TodaySnapEntry.ID) -> Void
     private var entries: [TodaySnapEntry]
     private weak var draggedNode: SKNode?
-    private var dragOrigin = CGPoint.zero
-    private var previousDragPoint = CGPoint.zero
-    private var previousDragTime: TimeInterval = 0
+    private var touchOrigin = CGPoint.zero
+    private var cardOrigin = CGPoint.zero
+    private var originalZPosition: CGFloat = 0
+    private var isDragging = false
 
     init(
         entries: [TodaySnapEntry],
@@ -113,51 +114,65 @@ final class TodaySnapPhysicsScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let point = touch.location(in: self)
+        beginInteraction(at: touch.location(in: self))
+    }
+
+    func beginInteraction(at point: CGPoint) {
         guard let node = cardNode(at: point) else { return }
         draggedNode = node
-        dragOrigin = point
-        previousDragPoint = point
-        previousDragTime = touch.timestamp
-        node.physicsBody?.isDynamic = false
-        node.zPosition = 100
+        touchOrigin = point
+        cardOrigin = node.position
+        originalZPosition = node.zPosition
+        isDragging = false
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let node = draggedNode else { return }
-        let point = clamped(touch.location(in: self), for: node)
-        node.position = point
-        previousDragPoint = point
-        previousDragTime = touch.timestamp
+        guard let touch = touches.first else { return }
+        moveInteraction(to: touch.location(in: self))
+    }
+
+    func moveInteraction(to point: CGPoint) {
+        guard let node = draggedNode else { return }
+        let dx = point.x - touchOrigin.x
+        let dy = point.y - touchOrigin.y
+        guard isDragging || hypot(dx, dy) >= 10 else { return }
+        if !isDragging {
+            isDragging = true
+            node.physicsBody?.isDynamic = false
+            node.physicsBody?.velocity = .zero
+            node.zPosition = 100
+        }
+        node.position = clamped(CGPoint(x: cardOrigin.x + dx, y: cardOrigin.y + dy), for: node)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let node = draggedNode else { return }
-        let point = clamped(touch.location(in: self), for: node)
-        let distance = hypot(point.x - dragOrigin.x, point.y - dragOrigin.y)
-        let elapsed = max(1.0 / 120.0, touch.timestamp - previousDragTime)
-        let velocity = CGVector(
-            dx: boundedVelocity((point.x - previousDragPoint.x) / elapsed),
-            dy: boundedVelocity((point.y - previousDragPoint.y) / elapsed)
-        )
+        guard let touch = touches.first else { return }
+        endInteraction(at: touch.location(in: self))
+    }
 
-        node.position = point
-        node.physicsBody?.isDynamic = true
-        node.physicsBody?.velocity = velocity
-        node.zPosition = 10
-        draggedNode = nil
-
-        if distance < 10,
-           let name = node.name,
-           let id = UUID(uuidString: String(name.dropFirst("snap:".count))) {
+    func endInteraction(at point: CGPoint) {
+        guard let node = draggedNode else { return }
+        if isDragging {
+            moveInteraction(to: point)
+            node.physicsBody?.isDynamic = true
+            node.physicsBody?.velocity = .zero
+            node.zPosition = originalZPosition
+        } else if let name = node.name,
+                  let id = UUID(uuidString: String(name.dropFirst("snap:".count))) {
             onSelect(id)
         }
+        draggedNode = nil
+        isDragging = false
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        draggedNode?.physicsBody?.isDynamic = true
-        draggedNode?.zPosition = 10
+        if isDragging {
+            draggedNode?.physicsBody?.isDynamic = true
+            draggedNode?.physicsBody?.velocity = .zero
+            draggedNode?.zPosition = originalZPosition
+        }
         draggedNode = nil
+        isDragging = false
     }
 
     private func rebuildScene() {
@@ -195,13 +210,6 @@ final class TodaySnapPhysicsScene: SKScene {
     private func makeCard(for entry: TodaySnapEntry, size: CGSize) -> SKNode {
         let card = SKNode()
         card.name = "snap:\(entry.id.uuidString)"
-
-        let shadow = SKShapeNode(rectOf: size, cornerRadius: 15)
-        shadow.fillColor = UIColor.black.withAlphaComponent(0.11)
-        shadow.strokeColor = .clear
-        shadow.position.y = -5
-        shadow.zPosition = -2
-        card.addChild(shadow)
 
         let surface = SKShapeNode(rectOf: size, cornerRadius: 15)
         surface.fillColor = .white
@@ -308,9 +316,6 @@ final class TodaySnapPhysicsScene: SKScene {
         )
     }
 
-    private func boundedVelocity(_ value: CGFloat) -> CGFloat {
-        max(-900, min(900, value))
-    }
 }
 
 private struct StaticSnapPile: View {

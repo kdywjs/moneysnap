@@ -1,10 +1,19 @@
 import Foundation
+import PhotosUI
 import SwiftUI
+import UIKit
 
 struct AppShellView: View {
     @Binding var selectedTab: AppTab
     @State private var tabRouter = TabRouter()
     @State private var presentedSheet: AppSheet?
+    @State private var showsRecordSource = false
+    @State private var showsRecordInput = false
+    @State private var showsCamera = false
+    @State private var photoItems: [PhotosPickerItem] = []
+    @State private var capturedImage: UIImage?
+    @State private var showsPhotoError = false
+    @State private var activeRecordModel: SnapCaptureModel?
     @State private var presentsMenu = false
     @State private var pendingShare: SnapRecordReceipt?
     @State private var todayViewModel: TodaySnapViewModel
@@ -70,7 +79,7 @@ struct AppShellView: View {
             if tabRouter.router(for: selectedTab).path.isEmpty {
                 MoneySnapTabBar(selectedTab: $selectedTab) { tab in
                     if tab == .add {
-                        presentedSheet = .record
+                        showsRecordSource = true
                     } else {
                         selectedTab = tab
                     }
@@ -94,7 +103,16 @@ struct AppShellView: View {
                     onClose: { presentsMenu = false }
                 )
             }
+
+            if showsRecordSource {
+                Color.white.opacity(0.46)
+                    .ignoresSafeArea()
+                    .onTapGesture { showsRecordSource = false }
+                recordSourceMenu
+                    .padding(.bottom, 126)
+            }
         }
+        .background(Color.white.ignoresSafeArea())
         .ignoresSafeArea(.container, edges: .bottom)
         .sheet(item: $presentedSheet, onDismiss: presentPendingShare) { sheet in
             switch sheet {
@@ -119,6 +137,34 @@ struct AppShellView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showsCamera, onDismiss: finishCamera) {
+            CameraPicker(
+                onImage: { image in
+                    capturedImage = image
+                    showsCamera = false
+                },
+                onCancel: { showsCamera = false }
+            )
+            .ignoresSafeArea()
+        }
+        .fullScreenCover(isPresented: $showsRecordInput, onDismiss: {
+            activeRecordModel = nil
+            presentPendingShare()
+        }) {
+            if let activeRecordModel {
+                SnapCaptureView(model: activeRecordModel) { receipt, jpeg in
+                    apply(receipt, previewJPEG: jpeg)
+                }
+            }
+        }
+        .onChange(of: photoItems) { _, items in
+            Task { await loadPhotos(items) }
+        }
+        .alert("사진을 열 수 없어요", isPresented: $showsPhotoError) {
+            Button("확인") {}
+        } message: {
+            Text("다른 사진을 선택하거나 사진 없이 기록해 주세요.")
+        }
         .task(id: selectedTab) {
             shareGroups = GroupCanvasOrder.apply((try? await groupClient.list().groups) ?? [])
         }
@@ -135,7 +181,7 @@ struct AppShellView: View {
         case .home:
             TodaySnapView(
                 viewModel: todayViewModel,
-                onRecord: { presentedSheet = .record },
+                onRecord: { showsRecordSource = true },
                 onOpen: { id in
                     tabRouter.router(for: .home).navigate(to: .snapDetail(id: id))
                 },
@@ -169,6 +215,93 @@ struct AppShellView: View {
                 systemImage: tab.systemImage
             )
         }
+    }
+
+    private var recordSourceMenu: some View {
+        HStack(alignment: .bottom, spacing: 14) {
+            Button {
+                activeRecordModel = makeCaptureModel()
+                showsRecordSource = false
+                showsCamera = true
+            } label: {
+                sourceVisual("촬영", symbol: "camera", dark: true)
+            }
+            .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+            .accessibilityIdentifier("record.source.camera")
+            .offset(y: 18)
+
+            PhotosPicker(selection: $photoItems, maxSelectionCount: 3, matching: .images) {
+                sourceVisual("앨범", symbol: "photo")
+            }
+            .accessibilityIdentifier("record.source.album")
+
+            Button {
+                let model = makeCaptureModel()
+                model.skipPhotos()
+                activeRecordModel = model
+                showsRecordSource = false
+                showsRecordInput = true
+            } label: {
+                sourceVisual("사진 없음", symbol: "arrow.right")
+            }
+            .accessibilityIdentifier("record.source.none")
+            .offset(y: 18)
+        }
+        .buttonStyle(.plain)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+    }
+
+    nonisolated private func sourceVisual(_ title: String, symbol: String, dark: Bool = false) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 25, weight: .medium))
+                .foregroundStyle(dark ? Color.white : MoneySnapVisualSystem.ink)
+                .frame(width: 60, height: 60)
+                .background(dark ? MoneySnapVisualSystem.charcoal : Color.white, in: Circle())
+                .shadow(color: .black.opacity(0.12), radius: 12, y: 10)
+            Text(title)
+                .font(.moneySnap(size: 12, weight: .bold))
+                .foregroundStyle(MoneySnapVisualSystem.ink)
+        }
+        .frame(width: 74, height: 96)
+    }
+
+    private func finishCamera() {
+        defer { capturedImage = nil }
+        guard let capturedImage else {
+            activeRecordModel = nil
+            showsRecordSource = true
+            return
+        }
+        guard let jpeg = try? JpegNormalizer.normalize(capturedImage),
+              let activeRecordModel else {
+            activeRecordModel = nil
+            showsRecordSource = true
+            showsPhotoError = true
+            return
+        }
+        activeRecordModel.attach([jpeg])
+        showsRecordInput = true
+    }
+
+    private func loadPhotos(_ items: [PhotosPickerItem]) async {
+        var photos: [NormalizedJpeg] = []
+        for item in items.prefix(3) {
+            guard let data = try? await item.loadTransferable(type: Data.self),
+                  let image = UIImage(data: data),
+                  let jpeg = try? JpegNormalizer.normalize(image) else { continue }
+            photos.append(jpeg)
+        }
+        guard !photos.isEmpty else {
+            if !items.isEmpty { showsPhotoError = true }
+            return
+        }
+        let model = makeCaptureModel()
+        model.attach(photos)
+        activeRecordModel = model
+        photoItems = []
+        showsRecordSource = false
+        showsRecordInput = true
     }
 
     @ViewBuilder

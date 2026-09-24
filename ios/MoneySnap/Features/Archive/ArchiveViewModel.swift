@@ -90,7 +90,12 @@ final class ArchiveViewModel {
 
     func select(day localDay: String) async {
         selectedDay = localDay
-        await loadDay(localDay)
+        if occupied.contains(localDay) {
+            await loadDay(localDay)
+        } else {
+            snaps = []
+            failed = false
+        }
     }
 
     func retry() async {
@@ -105,8 +110,10 @@ final class ArchiveViewModel {
             let page = try await client.archive(from: bounds.from, to: bounds.to, cursor: nil)
             occupied = Set(page.occupiedLocalDays ?? [])
             failed = false
-            if let selectedDay {
+            if let selectedDay, occupied.contains(selectedDay) {
                 await loadDay(selectedDay)
+            } else {
+                snaps = []
             }
         } catch {
             failed = true

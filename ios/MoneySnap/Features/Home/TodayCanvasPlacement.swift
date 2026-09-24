@@ -14,11 +14,11 @@ enum TodayCanvasPlacement {
     static let floorY: CGFloat = 400
     static let ceilingY: CGFloat = 92
     static let dropY: CGFloat = 108
-    static let recordButtonCenterY: CGFloat = 448
-    static let recordButtonHeight: CGFloat = 51
-    static let recordButtonWidth: CGFloat = 132
+    static let recordButtonCenterY: CGFloat = 435
+    static let recordButtonHeight: CGFloat = 65
+    static let recordButtonWidth: CGFloat = 164
     static let physicsCeilingY: CGFloat = 96
-    static let physicsFloorY: CGFloat = 416
+    static let physicsFloorY: CGFloat = 395
     static let floatSpeedLimit: CGFloat = 58
     static let floatCruiseSpeed: CGFloat = 24
 
