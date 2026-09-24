@@ -21,7 +21,6 @@ struct SnapCaptureView: View {
             if model.layout == .combined {
                 steps
                     .frame(maxWidth: .infinity, maxHeight: model.phase == .source || model.phase == .details ? .infinity : nil, alignment: .top)
-                    .accessibilityIdentifier(combinedScreenIdentifier)
             } else {
                 steps
             }
@@ -67,14 +66,6 @@ struct SnapCaptureView: View {
             amountStep
         case .details:
             detailsStep
-        }
-    }
-
-    private var combinedScreenIdentifier: String {
-        switch model.phase {
-        case .source: "screen.record.source"
-        case .amount: "screen.record.amount"
-        case .category, .details: "screen.record.category"
         }
     }
 
@@ -249,6 +240,7 @@ struct SnapCaptureView: View {
                         .font(.moneySnap(size: 24, weight: .bold))
                         .foregroundStyle(MoneySnapVisualSystem.ink)
                         .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("screen.record.category")
                         .accessibilityFocused($voiceOverFocus, equals: .categoryHeader)
                     Spacer()
                     if let progress = model.photoQueue.progressLabel {
