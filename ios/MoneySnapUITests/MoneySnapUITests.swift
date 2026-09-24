@@ -103,6 +103,8 @@ final class MoneySnapUITests: XCTestCase {
             app.buttons["record.digit.\(digit)"].tap()
         }
         let submit = app.buttons["record.submit"]
+        print("record.submit enabled=\(submit.isEnabled) frame=\(submit.frame) app=\(app.frame)")
+        if !submit.isHittable { print(app.debugDescription) }
         XCTAssertTrue(submit.isHittable)
         XCTAssertLessThanOrEqual(submit.frame.maxY, app.frame.maxY - 8)
         XCTAssertEqual(submit.label, "저장하기")
@@ -190,6 +192,8 @@ final class MoneySnapUITests: XCTestCase {
         }
 
         let submit = app.buttons["record.submit"]
+        print("record.retry submit enabled=\(submit.isEnabled) frame=\(submit.frame) app=\(app.frame)")
+        if !submit.isHittable { print(app.debugDescription) }
         XCTAssertTrue(makeHittable(submit, in: app))
         XCTAssertEqual(submit.label, "저장하기")
         submit.tap()
