@@ -36,10 +36,8 @@ struct MoneySnapTabBar: View {
         }
         .padding(.horizontal, 5)
         .frame(height: 58)
-        .background(.white.opacity(0.94), in: Capsule())
         .background(.ultraThinMaterial, in: Capsule())
         .overlay(Capsule().stroke(.white.opacity(0.75), lineWidth: 1))
-        .shadow(color: .black.opacity(0.11), radius: 14, y: 5)
     }
 }
 

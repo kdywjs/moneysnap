@@ -112,6 +112,7 @@ struct AppShellView: View {
                     .padding(.bottom, 126)
             }
         }
+        .background(Color.white.ignoresSafeArea())
         .ignoresSafeArea(.container, edges: .bottom)
         .sheet(item: $presentedSheet, onDismiss: presentPendingShare) { sheet in
             switch sheet {

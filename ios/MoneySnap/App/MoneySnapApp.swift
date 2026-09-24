@@ -121,6 +121,7 @@ struct MoneySnapApp: App {
             mediaClient: mediaClient,
             initialCaptureModel: initialCaptureModel
         )
+        .preferredColorScheme(.light)
     }
 
     private static func liveAuthenticationModel() -> AuthenticationModel {
