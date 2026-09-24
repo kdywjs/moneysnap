@@ -12,7 +12,7 @@ struct TodayCanvasPlacementTests {
         scene.didMove(to: SKView())
         let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
         let start = card.position
-        let captionPoint = CGPoint(x: start.x + 35, y: start.y - 35)
+        let captionPoint = CGPoint(x: start.x + 35, y: start.y - 10)
 
         scene.beginInteraction(at: captionPoint)
         scene.endInteraction(at: captionPoint)
