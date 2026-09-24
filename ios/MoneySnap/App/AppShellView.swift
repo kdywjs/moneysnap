@@ -17,6 +17,7 @@ struct AppShellView: View {
     @State private var presentsMenu = false
     @State private var pendingShare: SnapRecordReceipt?
     @State private var todayViewModel: TodaySnapViewModel
+    @State private var homeDropGeneration = 0
     @State private var shareGroups: [MoneySnapGroup] = []
     private let authentication: AuthenticationModel
     private let snapJournalClient: any SnapJournalClient
@@ -105,13 +106,16 @@ struct AppShellView: View {
             }
 
             if showsRecordSource {
-                Color.white.opacity(0.46)
+                Color.black.opacity(0.38)
                     .ignoresSafeArea()
                     .onTapGesture { showsRecordSource = false }
+                    .transition(.opacity)
                 recordSourceMenu
                     .padding(.bottom, 126)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showsRecordSource)
         .background(Color.white.ignoresSafeArea())
         .ignoresSafeArea(.container, edges: .bottom)
         .sheet(item: $presentedSheet, onDismiss: presentPendingShare) { sheet in
@@ -160,6 +164,9 @@ struct AppShellView: View {
         .onChange(of: photoItems) { _, items in
             Task { await loadPhotos(items) }
         }
+        .onChange(of: selectedTab) { oldTab, newTab in
+            if oldTab != .home && newTab == .home { homeDropGeneration += 1 }
+        }
         .alert("사진을 열 수 없어요", isPresented: $showsPhotoError) {
             Button("확인") {}
         } message: {
@@ -188,7 +195,9 @@ struct AppShellView: View {
                 onMenu: { presentsMenu = true },
                 groups: shareGroups,
                 groupClient: groupClient,
-                media: mediaClient
+                media: mediaClient,
+                dropGeneration: homeDropGeneration,
+                onRefresh: { homeDropGeneration += 1 }
             )
         case .group:
             GroupListView(client: groupClient)
@@ -261,7 +270,7 @@ struct AppShellView: View {
                 .shadow(color: .black.opacity(0.12), radius: 12, y: 10)
             Text(title)
                 .font(.moneySnap(size: 12, weight: .bold))
-                .foregroundStyle(MoneySnapVisualSystem.ink)
+                .foregroundStyle(.white)
         }
         .frame(width: 74, height: 96)
     }

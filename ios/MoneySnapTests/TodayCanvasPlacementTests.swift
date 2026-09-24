@@ -42,6 +42,34 @@ struct TodayCanvasPlacementTests {
         #expect(card.physicsBody?.velocity == .zero)
     }
 
+    @Test @MainActor
+    func replayRecreatesCardsAtTheTopWithTheSameEntries() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900))
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
+        scene.didMove(to: SKView())
+        let oldCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        oldCard.position = CGPoint(x: 90, y: 90)
+
+        scene.replayDrop()
+
+        let newCard = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+        #expect(newCard !== oldCard)
+        #expect(newCard.position.y > 90)
+        #expect(scene.physicsWorld.gravity == TodayCanvasPhysics.defaultGravity)
+    }
+
+    @Test @MainActor
+    func physicsCardUsesPhotoAndFloatingAmountChip() throws {
+        let entry = TodaySnapEntry(id: UUID(), category: .food, amount: try KrwAmount(18_900), artwork: .food)
+        let scene = TodaySnapPhysicsScene(entries: [entry]) { _ in }
+        scene.didMove(to: SKView())
+        let card = try #require(scene.children.first { $0.name == "snap:\(entry.id.uuidString)" })
+
+        #expect(card.childNode(withName: "photo") != nil)
+        #expect(card.childNode(withName: "amount-chip") != nil)
+        #expect(card.childNode(withName: "card-surface") == nil)
+    }
+
     @Test
     func restCentersMatchTheReviewedHomeCanvas() {
         let width: CGFloat = 393
