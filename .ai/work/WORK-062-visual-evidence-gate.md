@@ -24,8 +24,8 @@ owner: codex
 
 ## Acceptance criteria
 
-- [ ] Home/My/record-category/record-amount의 PNG overlay/diff와 report가 모두 생성된다.
-- [ ] 어느 시나리오라도 report가 없거나 임계값을 넘으면 CI가 실패한다.
+- [x] Home/My/record-category/record-amount의 PNG overlay/diff와 report가 모두 생성된다.
+- [x] 어느 시나리오라도 report가 없거나 임계값을 넘으면 CI가 실패한다.
 - [x] Windows iOS project·visual validator가 통과한다.
 - [ ] 기능 PR #39와 분리된 PR에서 검증·병합한다.
 
@@ -47,7 +47,7 @@ git diff --check
 ## Evidence
 
 - 실행 명령: 기존 PR CI `35992048212` log/artifact 검토; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`; LF 정규화 후 `bash -n`.
-- 결과: 기존 artifact의 `home/overlay.png`가 없어 CI completeness probe가 실패했다. 기존 Home 첫 캡처 뒤 `visual_diff_crop_arguments[@]: unbound variable`였지만 CI는 성공 표시했다. 수정 후 Windows validator 2건·Bash syntax·diff check 통과. macOS 전체 캡처 검증 대기.
+- 결과: 기존 artifact의 `home/overlay.png`가 없어 CI completeness probe가 실패했다. 기존 Home 첫 캡처 뒤 `visual_diff_crop_arguments[@]: unbound variable`였지만 CI는 성공 표시했다. 수정 후 Windows validator 2건·Bash syntax·diff check 통과. macOS CI `35995925369` 재실행에서 native tests 통과, 네 화면의 overlay/diff/report 12개 생성 확인. Home MAE `0.061819`와 record-amount MAE `0.068398`가 고정 기준 `0.05`를 초과하여 CI가 정확히 실패했다. My `0.033377`와 record-category `0.048584`는 통과. 기존 UI 오차는 WORK-061 기능 PR에서 수정한다.
 - 리뷰: 기존 고정 앵커는 유지한다.
 
 ## Agent rules impact
@@ -62,7 +62,7 @@ git diff --check
 - graph action: 빈 그래프 확인 후 full build (205 files, 1812 nodes), 변경 탐지
 - base: origin/main `1e50fc6`
 - risk: low 0.35
-- findings와 처리 결과: `capture_scenario` test gap 1건; macOS CI 실제 캡처로 검증 예정.
+- findings와 처리 결과: `capture_scenario` test gap 1건은 macOS CI 실제 4-screen 캡처와 report 산출로 검증. 기능 화면 오차 2건은 WORK-061로 이관.
 
 ## Decisions and risks
 
