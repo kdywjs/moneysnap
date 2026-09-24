@@ -147,9 +147,10 @@ struct TodayCanvasPlacementTests {
     }
 
     @Test
-    func recordButtonIsAboutTwentyPercentSmallerThanTheOriginalCapsule() {
-        #expect(TodayCanvasPlacement.recordButtonWidth == 132)
-        #expect(TodayCanvasPlacement.recordButtonHeight == 51)
+    func recordButtonMatchesTheReviewedHomePlacement() {
+        #expect(TodayCanvasPlacement.recordButtonCenterY == 435)
+        #expect(TodayCanvasPlacement.recordButtonWidth == 164)
+        #expect(TodayCanvasPlacement.recordButtonHeight == 65)
         #expect(TodayCanvasPlacement.physicsFloorY < TodayCanvasPlacement.recordButtonCenterY - TodayCanvasPlacement.recordButtonHeight / 2)
     }
 

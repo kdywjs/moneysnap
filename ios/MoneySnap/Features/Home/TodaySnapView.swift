@@ -190,9 +190,9 @@ private struct TodaySnapContent: View {
 
     private func recordButton(availableWidth: CGFloat) -> some View {
         Button(action: onRecord) {
-            HStack(spacing: 10) {
-                Image(systemName: "plus").font(.system(size: 12, weight: .bold)).frame(width: 22, height: 22).foregroundStyle(.white).background(.white.opacity(0.18), in: Circle())
-                Text("기록하기").font(.moneySnap(size: 16, weight: .bold))
+            HStack(spacing: 12) {
+                Image(systemName: "plus").font(.system(size: 14, weight: .bold)).frame(width: 26, height: 26).foregroundStyle(.white).background(.white.opacity(0.18), in: Circle())
+                Text("기록하기").font(.moneySnap(size: 18, weight: .bold))
             }
             .foregroundStyle(.white)
             .frame(width: TodayCanvasPlacement.recordButtonWidth, height: TodayCanvasPlacement.recordButtonHeight)

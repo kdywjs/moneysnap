@@ -54,8 +54,8 @@ git diff --check
 ## Evidence
 
 - 실행 명령: `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-project.ps1`; `powershell -ExecutionPolicy Bypass -File ios\scripts\validate-visual-baseline.ps1`; `git diff --check`; code-review-graph full build → minimal context → standard detect changes
-- 결과: `git diff --check` exit 0. 두 Windows validator는 변경하지 않은 `ios/scripts/test-validate-visual-baseline.ps1`의 reviewed manifest probe / capture build-once 계약에서 실패했다. PR CI `35992048212`에서 macOS native test는 통과했다. 회귀 테스트 `tappingCardCaptionOpensDetailWithoutMovingTheCard`, `draggedCardKeepsTheGrabOffsetAndFallsWhenReleased`, 기록 완료 버튼 UI 테스트를 확인했다.
-- 시각 검증: 같은 CI가 성공으로 표시됐지만 `capture-visual-baseline.sh:135`의 빈 배열 확장 오류로 Home 첫 화면 캡처 뒤 중단됐다. 4개 시나리오의 diff/report가 없다. Home 화면의 상단·하단은 캡처에서 밝게 보이며 native material 탭 바가 보인다. 수동 RGB diff의 Home MAE는 0.0624, mismatch 0.4234이고 승인 임계값 0.05/0.43을 아직 통과하지 못했다. 기존 main 캡처도 같은 오류와 MAE 0.0618을 보였다.
+- 결과: `git diff --check` exit 0. 하네스 PR #40 병합 후 Windows validator 2건이 통과했다. PR CI `35998346981`의 macOS native test가 통과했고, 회귀 테스트 `tappingCardCaptionOpensDetailWithoutMovingTheCard`, `draggedCardKeepsTheGrabOffsetAndFallsWhenReleased`, 기록 완료 버튼 UI 테스트를 확인했다.
+- 시각 검증: PR #40의 하네스로 4개 시나리오의 diff/report가 모두 생성됐다. #39의 Home MAE `0.063219`, mismatch `0.423416`; My `0.034739`, category `0.048584`, amount `0.068398`. Home과 amount는 고정 MAE `0.05`를 초과해 CI가 실패했다. 금액 시나리오는 기존 단계형 modal을 캡처하며 새 전체화면 런타임을 캡처하지 않는다. Figma 고정 기준은 modal이므로 별도 anchor 결정이 필요하다. Home 버튼 위치·크기는 Figma 기준으로 조정하고 다시 검증한다.
 - 리뷰: 최신 main을 기준으로 isolated worktree를 만들고, 기존 사진 publish와 archive API를 재사용했다.
 
 ## Agent rules impact
@@ -76,4 +76,4 @@ git diff --check
 
 - 사진 publish 및 계정 인증은 최신 main의 기존 경로를 재사용한다.
 - TestFlight는 성공한 main iOS CI 이후 별도 workflow가 업로드한다.
-- 시각 하네스의 빈 배열 오류는 기능 작업과 분리하며 AGENTS.md에 따라 사용자 승인 전 수정하지 않는다.
+- 시각 하네스는 사용자 승인에 따라 별도 PR #40에서 수정·병합했다. 고정 Figma anchor는 변경하지 않았다.
