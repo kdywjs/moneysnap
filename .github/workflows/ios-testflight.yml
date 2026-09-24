@@ -90,6 +90,9 @@ jobs:
       - name: Test signing validation
         run: python3 -m unittest discover -s ios/scripts -p 'test_verify_testflight_signing.py'
 
+      - name: Preserve archive capabilities before distribution signing
+        run: bash ios/scripts/preserve-archive-entitlements.sh "$RUNNER_TEMP/MoneySnap.xcarchive"
+
       - name: Export signed IPA without uploading
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

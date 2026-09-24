@@ -134,3 +134,6 @@ TestFlight CD는 `.github/workflows/ios-testflight.yml`이 소유한다. 성공�
 | iOS TestFlight GitHub CD | environment·`main` policy 생성. secret 등록 후 첫 업로드 |
 
 이전 Windows self-hosted/named Tunnel 조사는 `docs/CI_CD_RESEARCH.md`에 역사적 근거로 남기되 현재 실행 계약으로 사용하지 않는다.
+### Preserve Apple login capabilities during TestFlight export
+
+Build 24 confirmed that the exported application lacked the Apple-login entitlement even though its embedded distribution profile allowed it. Before distribution export, `ios/scripts/preserve-archive-entitlements.sh` applies the source entitlements to an intermediate ad-hoc archive signature. This archive is never uploaded. Xcode export must re-sign it with Apple Distribution, and the existing final IPA checks must pass before upload. No new signing secrets or certificates are required.

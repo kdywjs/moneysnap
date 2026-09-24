@@ -4,6 +4,8 @@ from unittest.mock import patch
 import os
 import subprocess
 import tempfile
+import plistlib
+import shutil
 from pathlib import Path
 
 from verify_testflight_signing import validate, extract_ipa, command
@@ -24,6 +26,28 @@ class DiagnosticTests(unittest.TestCase):
         with patch('verify_testflight_signing.subprocess.run', return_value=result):
             with self.assertRaisesRegex(ValueError, '^inspection failed: unclassified$'):
                 command('/usr/bin/codesign', '--verify')
+
+
+@unittest.skipUnless(os.path.exists('/usr/bin/codesign'), 'macOS signing test')
+class ArchiveEntitlementTests(unittest.TestCase):
+    def test_unsigned_archive_gets_source_entitlements_before_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / 'Fixture.xcarchive'
+            app = archive / 'Products' / 'Applications' / 'MoneySnap.app'
+            app.mkdir(parents=True)
+            shutil.copy('/usr/bin/true', app / 'MoneySnap')
+            subprocess.run(['/usr/bin/codesign', '--remove-signature', str(app / 'MoneySnap')],
+                           check=True)
+            (app / 'Info.plist').write_bytes(plistlib.dumps({
+                'CFBundleIdentifier': 'com.ansandy.moneysnap',
+                'CFBundleExecutable': 'MoneySnap', 'CFBundlePackageType': 'APPL'}))
+            script = Path(__file__).with_name('preserve-archive-entitlements.sh')
+            subprocess.run(['/bin/bash', str(script), str(archive)], check=True,
+                           stdout=subprocess.PIPE)
+            ent = plistlib.loads(subprocess.check_output([
+                '/usr/bin/codesign', '-d', '--entitlements', ':-', str(app)],
+                stderr=subprocess.DEVNULL))
+            self.assertEqual(ent.get('com.apple.developer.applesignin'), ['Default'])
 
 
 @unittest.skipUnless(os.path.exists('/usr/bin/ditto'), 'macOS archive metadata test')
