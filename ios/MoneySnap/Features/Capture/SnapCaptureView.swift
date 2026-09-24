@@ -122,6 +122,7 @@ struct SnapCaptureView: View {
                             .frame(width: 78, height: 78)
                             .overlay(Circle().fill(.white).padding(8))
                     }
+                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                     .accessibilityLabel("사진 촬영")
                     .accessibilityIdentifier("record.source.camera")
                     Spacer()
@@ -253,7 +254,6 @@ struct SnapCaptureView: View {
                     if let progress = model.photoQueue.progressLabel {
                         stepPill(progress)
                     }
-                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
                     Button { close() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 17, weight: .semibold))
