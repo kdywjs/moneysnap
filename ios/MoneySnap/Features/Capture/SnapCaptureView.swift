@@ -30,6 +30,15 @@ struct SnapCaptureView: View {
         .presentationDragIndicator(model.phase == .source ? .visible : (model.layout == .staged ? .hidden : .visible))
         .presentationBackground(model.phase == .source ? Color.black : Color.white)
         .presentationContentInteraction(model.layout == .combined ? .resizes : .automatic)
+        .overlay {
+            if model.isSubmitting {
+                Color.white.opacity(0.65).ignoresSafeArea()
+                ProgressView("저장 중이에요")
+                    .padding(24)
+                    .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .accessibilityIdentifier("record.saving")
+            }
+        }
         .onAppear { voiceOverFocus = model.focusTarget }
         .onChange(of: model.focusTarget) { _, focusTarget in
             voiceOverFocus = focusTarget
@@ -235,20 +244,6 @@ struct SnapCaptureView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .center) {
-                    if model.photoQueue.current != nil {
-                        Button {
-                            handleBack()
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 22, weight: .medium))
-                                .frame(width: 44, height: 44)
-                                .background(MoneySnapVisualSystem.profileNeutralFill, in: Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(model.isSubmitting)
-                        .accessibilityLabel("뒤로")
-                        .accessibilityIdentifier("record.back")
-                    }
                     Text("기록")
                         .font(.moneySnap(size: 24, weight: .bold))
                         .foregroundStyle(MoneySnapVisualSystem.ink)
@@ -258,6 +253,17 @@ struct SnapCaptureView: View {
                     if let progress = model.photoQueue.progressLabel {
                         stepPill(progress)
                     }
+                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                    Button { close() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .background(MoneySnapVisualSystem.profileNeutralFill, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.isSubmitting)
+                    .accessibilityLabel("닫기")
+                    .accessibilityIdentifier("record.close")
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
@@ -267,10 +273,10 @@ struct SnapCaptureView: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 168, height: 168)
-                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                        .frame(width: 78, height: 78)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                         .frame(maxWidth: .infinity)
-                        .padding(.top, 12)
+                        .padding(.top, 6)
                         .accessibilityHidden(true)
                 }
 
@@ -278,7 +284,7 @@ struct SnapCaptureView: View {
                     .font(.moneySnap(size: 15, weight: .bold))
                     .foregroundStyle(MoneySnapVisualSystem.secondaryText)
                     .padding(.horizontal, 24)
-                    .padding(.top, 16)
+                    .padding(.top, 10)
 
                 if model.needsCategoryPrompt {
                     Text("카테고리를 선택하세요")
@@ -290,19 +296,19 @@ struct SnapCaptureView: View {
                 }
 
                 categoryGrid
-                    .padding(.top, 12)
+                    .padding(.top, 8)
 
                 Text("금액")
                     .font(.moneySnap(size: 15, weight: .bold))
                     .foregroundStyle(MoneySnapVisualSystem.secondaryText)
                     .padding(.horizontal, 24)
-                    .padding(.top, 20)
+                    .padding(.top, 12)
 
                 Text(model.amountText)
-                    .font(.moneySnap(size: 46, weight: .black))
+                    .font(.moneySnap(size: 40, weight: .black))
                     .foregroundStyle(MoneySnapVisualSystem.ink)
                     .minimumScaleFactor(0.65)
-                    .frame(maxWidth: .infinity, minHeight: 64, alignment: .center)
+                    .frame(maxWidth: .infinity, minHeight: 50, alignment: .center)
                     .padding(.horizontal, 24)
                     .accessibilityLabel("금액 \(model.amountText)")
                     .accessibilityIdentifier("record.amount")
@@ -317,24 +323,24 @@ struct SnapCaptureView: View {
                 keypad
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 24)
-                    .padding(.top, model.failure == nil ? 16 : 8)
-
-                submitButton
-                    .padding(.horizontal, 24)
-                    .padding(.top, 14)
-                    .padding(.bottom, 24)
+                    .padding(.top, model.failure == nil ? 8 : 4)
                 }
             }
             .scrollIndicators(.hidden)
+            submitButton
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var categoryGrid: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.fixed(48), spacing: 38), count: 4),
+            columns: Array(repeating: model.layout == .combined
+                ? GridItem(.flexible(), spacing: 8) : GridItem(.fixed(48), spacing: 38), count: 4),
             alignment: .center,
-            spacing: 15
+            spacing: model.layout == .combined ? 8 : 15
         ) {
             ForEach(SnapCategory.allCases, id: \.rawValue) { category in
                 Button {
@@ -342,8 +348,9 @@ struct SnapCaptureView: View {
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: category.captureSystemImage)
-                            .font(.system(size: 21, weight: .medium))
-                            .frame(width: 48, height: 48)
+                            .font(.system(size: model.layout == .combined ? 19 : 21, weight: .medium))
+                            .frame(width: model.layout == .combined ? 44 : 48,
+                                   height: model.layout == .combined ? 44 : 48)
                             .background(
                                 model.selectedCategory == category
                                     ? Color.white : MoneySnapVisualSystem.profileNeutralFill,
@@ -361,7 +368,7 @@ struct SnapCaptureView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .frame(minWidth: 48, minHeight: 70)
+                .frame(minWidth: 44, minHeight: model.layout == .combined ? 64 : 70)
                 .accessibilityIdentifier("record.category.\(category.rawValue)")
                 .accessibilityAddTraits(model.selectedCategory == category ? .isSelected : [])
             }
@@ -384,8 +391,9 @@ struct SnapCaptureView: View {
 
     private var keypad: some View {
         LazyVGrid(
-            columns: Array(repeating: GridItem(.fixed(87), spacing: 15), count: 3),
-            spacing: 11
+            columns: Array(repeating: model.layout == .combined
+                ? GridItem(.flexible(), spacing: 8) : GridItem(.fixed(87), spacing: 15), count: 3),
+            spacing: model.layout == .combined ? 8 : 11
         ) {
             ForEach([1, 2, 3, 4, 5, 6, 7, 8, 9], id: \.self) { digit in
                 digitButton(digit)
@@ -470,6 +478,11 @@ struct SnapCaptureView: View {
         }
     }
 
+    private func close() {
+        if model.requiresAbandonConfirmation { confirmsAbandon = true }
+        else if !model.isSubmitting { dismiss() }
+    }
+
     private func submit() async {
         let previewJPEG = model.photoQueue.current?.bytes
         guard let receipt = await model.submit() else { return }
@@ -490,9 +503,9 @@ struct SnapCaptureView: View {
         case let .mutationConflict(correlationID):
             "같은 기록 요청이 달라 저장할 수 없어요. 문의 코드: \(correlationID)"
         case .serverFailure, .transportFailure:
-            "저장 결과를 확인하지 못했어요. 같은 기록으로 다시 확인해 주세요."
+            "연결이 불안정해요. 다시 시도해 주세요."
         case .malformedResponse:
-            "저장 응답을 확인하지 못했어요. 같은 기록으로 다시 확인해 주세요."
+            "저장됐는지 확인할 수 없어요. 다시 확인해 주세요."
         case .versionConflict, .notAccessible:
             "이 기록은 더 이상 저장할 수 없어요."
         }
@@ -513,7 +526,7 @@ struct SnapCaptureView: View {
     }
 }
 
-private struct CameraPicker: UIViewControllerRepresentable {
+struct CameraPicker: UIViewControllerRepresentable {
     let onImage: (UIImage) -> Void
     var onCancel: () -> Void = {}
 
@@ -523,7 +536,7 @@ private struct CameraPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
+        picker.sourceType = .camera
         picker.delegate = context.coordinator
         picker.allowsEditing = false
         return picker

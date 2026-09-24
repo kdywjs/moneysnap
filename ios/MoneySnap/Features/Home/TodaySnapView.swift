@@ -16,16 +16,28 @@ struct TodaySnapView: View {
             case .loading:
                 ProgressView().accessibilityIdentifier("home.loading")
             case let .content(summary):
-                TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media)
-                    .refreshable { await viewModel.refresh() }
-                    .overlay(alignment: .top) {
-                        if viewModel.refreshFailure {
-                            Button("다시 불러오기") { Task { await viewModel.retry() } }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .accessibilityIdentifier("home.refresh-retry")
-                                .padding(.top, 72)
-                        }
+                if summary.entries.isEmpty {
+                    ContentUnavailableView {
+                        Label("이 날짜에는 Snap이 없어요", systemImage: "square.stack")
+                            .accessibilityIdentifier("screen.home")
+                    } description: {
+                        Text("첫 소비를 가볍게 남겨 보세요.")
+                    } actions: {
+                        Button("기록하기", action: onRecord)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .accessibilityIdentifier("home.record")
                     }
+                } else {
+                    TodaySnapContent(summary: summary, onRecord: onRecord, onOpen: onOpen, onMenu: onMenu, groups: groups, groupClient: groupClient, media: media)
+                        .refreshable { await viewModel.refresh() }
+                        .overlay(alignment: .top) {
+                            if viewModel.refreshFailure {
+                                Button("다시 불러오기") { Task { await viewModel.retry() } }
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .accessibilityIdentifier("home.refresh-retry")
+                                    .padding(.top, 72)
+                            }
+                        }
             case .failure:
                 ContentUnavailableView {
                     Label("오늘 기록을 불러오지 못했어요", systemImage: "exclamationmark.arrow.triangle.2.circlepath")

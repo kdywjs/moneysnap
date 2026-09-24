@@ -65,6 +65,23 @@ struct ArchiveViewModelTests {
     }
 
     @Test
+    func selectingDaysKnownToBeEmptyDoesNotRequestThemAgain() async {
+        let client = RecordingArchiveClient(occupied: ["2026-06-14"], snaps: [])
+        let viewModel = ArchiveViewModel(client: client, now: { date("2026-06-03") }, calendar: utcGregorian)
+
+        await viewModel.load()
+        #expect(await client.ranges.count == 1)
+        #expect(viewModel.emptyCopy == .emptySelectedDay)
+
+        await viewModel.select(day: "2026-06-12")
+        #expect(await client.ranges.count == 1)
+        #expect(viewModel.emptyCopy == .emptySelectedDay)
+
+        await viewModel.select(day: "2026-06-14")
+        #expect(await client.ranges.count == 2)
+    }
+
+    @Test
     func shiftingMonthRequestsTheNewInclusiveRange() async {
         let client = RecordingArchiveClient(occupied: ["2026-07-01"], snaps: [])
         let viewModel = ArchiveViewModel(
