@@ -1,7 +1,32 @@
 import copy
 import unittest
+import os
+import subprocess
+import tempfile
+from pathlib import Path
 
-from verify_testflight_signing import validate
+from verify_testflight_signing import validate, extract_ipa
+
+
+@unittest.skipUnless(os.path.exists('/usr/bin/ditto'), 'macOS archive metadata test')
+class ExtractionTests(unittest.TestCase):
+    def test_preserves_executable_mode_and_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            app = root / 'Payload' / 'Fixture.app'
+            app.mkdir(parents=True)
+            binary = app / 'Fixture'
+            binary.write_bytes(b'fixture')
+            binary.chmod(0o755)
+            (app / 'linked').symlink_to('Fixture')
+            ipa = root / 'fixture.ipa'
+            subprocess.run(['/usr/bin/ditto', '-c', '-k', '--keepParent',
+                            str(root / 'Payload'), str(ipa)], check=True)
+            extracted = root / 'extracted'
+            extract_ipa(ipa, extracted)
+            actual = extracted / 'Payload' / 'Fixture.app'
+            self.assertEqual((actual / 'Fixture').stat().st_mode & 0o777, 0o755)
+            self.assertTrue((actual / 'linked').is_symlink())
 
 
 class SigningTests(unittest.TestCase):
