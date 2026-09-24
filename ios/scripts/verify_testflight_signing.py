@@ -38,8 +38,17 @@ def validate(info, ent, profile, team, build):
 
 def command(*args):
     result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    require(result.returncode == 0, 'signing inspection command failed: ' + args[0])
+    require(result.returncode == 0, 'signing inspection command failed: ' + ' '.join(args[:2]))
     return result.stdout
+
+
+def extract_ipa(ipa, root):
+    with zipfile.ZipFile(ipa) as package:
+        require(all(not Path(n).is_absolute() and '..' not in Path(n).parts
+                    for n in package.namelist()), 'unsafe IPA entry')
+    # zipfile.extractall loses executable permissions and symlinks, invalidating
+    # an otherwise valid code signature. Preserve Apple's bundle metadata.
+    command('/usr/bin/ditto', '-x', '-k', str(ipa), str(root))
 
 
 def main():
@@ -52,10 +61,7 @@ def main():
     # Temporary extraction never includes user data; private material is not published.
     with tempfile.TemporaryDirectory(prefix='moneysnap-signing-') as tmp:
         root = Path(tmp)
-        with zipfile.ZipFile(args.ipa) as package:
-            require(all(not Path(n).is_absolute() and '..' not in Path(n).parts
-                        for n in package.namelist()), 'unsafe IPA entry')
-            package.extractall(root)
+        extract_ipa(args.ipa, root)
         apps = [path for path in (root / 'Payload').glob('*.app') if path.is_dir()]
         require(len(apps) == 1, 'expected exactly one application')
         app = apps[0]
