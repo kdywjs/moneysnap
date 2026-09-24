@@ -112,7 +112,7 @@ struct AppShellView: View {
                     .transition(.opacity)
                 recordSourceMenu
                     .padding(.bottom, 126)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.offset(y: 28).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showsRecordSource)

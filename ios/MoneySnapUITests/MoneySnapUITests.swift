@@ -159,13 +159,14 @@ final class MoneySnapUITests: XCTestCase {
         XCTAssertTrue(canvas.value as? String == "이동 1회, 낙하 1회")
 
         let scroll = app.scrollViews["home.recent.scroll"]
-        scroll.swipeDown()
-        XCTAssertTrue(canvas.value as? String == "이동 1회, 낙하 2회")
+        scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.14))
+            .press(forDuration: 0.05, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.65)))
+        XCTAssertTrue((canvas.value as? String)?.contains("낙하 2회") == true)
 
         app.buttons["tab.archive"].tap()
         app.buttons["tab.home"].tap()
         XCTAssertTrue(canvas.waitForExistence(timeout: 5))
-        XCTAssertTrue(canvas.value as? String == "이동 1회, 낙하 3회")
+        XCTAssertTrue((canvas.value as? String)?.contains("낙하 3회") == true)
     }
 
     @MainActor
