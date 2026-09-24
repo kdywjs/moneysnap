@@ -42,6 +42,9 @@ Local Xcode 27 unsigned archive succeeds and codesign confirms no signature. Thi
 - Follow-up RED: metadata-preserving extraction regression test fails before implementation; GREEN: all 7 tests pass after using ditto. Strict verification of the extracted signed fixture also passes. Signature/capability gates remain enforced.
 - PR #35 and its main CI passed. Build 23 (35946297825) exported successfully, but a codesign verification still failed. Since the message did not distinguish integrity from certificate requirements, neither a signature defect nor entitlement omission is established.
 - Further diagnostics read capability metadata before the still-mandatory signature gates, print only capability booleans, and classify allowlisted failure categories with distinct stage labels. No raw command stderr/profile data is exposed. All 9 tests pass, including diagnostic redaction tests.
+- PR #36 and main CI passed. Build 24 (35948415764) provides concrete evidence: signed Apple-login entitlement absent, embedded profile Apple-login entitlement present. Upload blocked before signature integrity/trust checks; build 21 itself remains unavailable for retrospective inspection.
+- Preserve the source capabilities in an intermediate ad-hoc archive signature before exportArchive; Apple Distribution export and all final gates remain mandatory. No certificate/private key creation, portal mutation or new credentials. Added a real codesign fixture regression test (RED: script absent; GREEN expected after implementation).
+- GREEN: all 10 tests pass. Actual locally-built MoneySnap device archive also retains Apple-login entitlement after the preservation script and passes strict codesign verification. Final Apple Distribution export still needs CI confirmation.
 
 ## Agent rules impact
 - no: existing security boundaries, environments and deployment approval remain unchanged. AGENTS.md unchanged.
