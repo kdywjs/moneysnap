@@ -113,6 +113,12 @@ TestFlight CD는 `.github/workflows/ios-testflight.yml`이 소유한다. 성공�
 
 ## 현재 활성화 상태
 
+### TestFlight 서명 진단 (WORK-060)
+
+아카이브 이후 `destination=export`로 서명된 IPA를 먼저 내보낸다. `verify_testflight_signing.py`가 실제 Apple Distribution 서명, 앱/프로파일의 Sign in with Apple 권한, 앱 ID, 팀, 빌드 번호 및 배포 프로파일 유형을 검사한 뒤 동일 IPA만 altool로 업로드한다. 검증 실패 시 업로드하지 않는다. 이 변경은 원인 진단이며 빌드 21의 권한 누락을 입증한 것은 아니다. cloud signing이 로컬 export를 지원하지 않거나 인증서가 없으면 export에서 안전하게 중단되며 자동 우회하지 않는다.
+
+공개 artifact에는 검증 성공 여부와 IPA SHA-256 등 선별한 JSON만 7일 보관한다. IPA, 프로비저닝 프로파일, 인증키는 게시하지 않는다. 테스트: `python3 -m unittest discover -s ios/scripts -p 'test_verify_testflight_signing.py'`.
+
 | 항목 | 상태 |
 |---|---|
 | GitHub repository | public |

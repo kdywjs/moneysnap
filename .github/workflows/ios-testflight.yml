@@ -87,7 +87,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             archive
 
-      - name: Export and upload to App Store Connect
+      - name: Test signing validation
+        run: python3 -m unittest discover -s ios/scripts -p 'test_verify_testflight_signing.py'
+
+      - name: Export signed IPA without uploading
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -104,6 +107,38 @@ jobs:
             -authenticationKeyPath "$ASC_AUTH_KEY_PATH" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Verify signed IPA and upload exact verified file
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          shopt -s nullglob
+          ipas=("$RUNNER_TEMP/MoneySnapExport/"*.ipa)
+          [[ ${#ipas[@]} -eq 1 ]] || { echo "Expected exactly one exported IPA" >&2; exit 1; }
+          python3 ios/scripts/verify_testflight_signing.py "${ipas[0]}" \
+            --team "$APPLE_TEAM_ID" --build "${{ github.run_number }}" \
+            --report "$RUNNER_TEMP/signing-verification.json"
+          [[ "$APP_STORE_CONNECT_KEY_ID" =~ ^[A-Z0-9]{10}$ ]] || exit 1
+          upload_dir=$(mktemp -d "$RUNNER_TEMP/moneysnap-upload.XXXXXX")
+          key_path="$upload_dir/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          mkdir -m 700 "$upload_dir/private_keys"
+          trap 'rm -f "$key_path"' EXIT
+          install -m 600 "$ASC_AUTH_KEY_PATH" "$key_path"
+          cd "$upload_dir"
+          xcrun altool --upload-app --type ios --file "${ipas[0]}" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Retain sanitized signing verification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: testflight-signing-verification-${{ github.run_number }}
+          path: ${{ runner.temp }}/signing-verification.json
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Remove temporary signing material
         if: always()

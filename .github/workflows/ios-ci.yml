@@ -42,6 +42,9 @@ jobs:
           xcodebuild -version
           xcrun simctl list devices available
 
+      - name: Test signing validation
+        run: python3 -m unittest discover -s ios/scripts -p 'test_verify_testflight_signing.py'
+
       - name: Run Swift native tests
         env:
           RESULT_BUNDLE_PATH: ${{ runner.temp }}/MoneySnap.xcresult

@@ -47,7 +47,7 @@ gh secret set APP_STORE_CONNECT_API_KEY_P8 --env ios-testflight
 
 - `.github/workflows/ios-ci.yml`: `macos-15`에서 Apple credential·provisioning 없이 Xcode 기본 ad-hoc 서명으로 native test를 실행하고, visual build는 signing을 비활성화하며 실패 `.xcresult`만 짧게 보관한다.
 - `.github/workflows/ios-testflight.yml`: `ios-testflight` environment의 App Store Connect API key로 `main` archive와 upload만 수행한다. 같은 레포이며 서버 CD와 secret을 공유하지 않는다.
-- `ios/scripts/write-testflight-export-options.sh`: `app-store-connect` / `destination=upload` ExportOptions를 생성한다.
+- `ios/scripts/write-testflight-export-options.sh`: `app-store-connect` / `destination=export` ExportOptions를 생성한다. 서명된 IPA 검증 후 별도 altool 단계가 동일 파일을 업로드한다. 검사 실패 시 업로드하지 않는다.
 - `ios/ci_scripts/ci_post_clone.sh`: 예전 Xcode Cloud hook이며 현재 TestFlight lane이 아니다.
 
 GitHub Actions iOS CI와 pull request job에는 Apple certificate, provisioning profile, App Store Connect key를 주입하지 않는다.
