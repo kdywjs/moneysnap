@@ -13,7 +13,7 @@ derived_data="$(mktemp -d)"
 maximum_mean_absolute_error="$(plutil -extract comparison.maximumMeanAbsoluteError raw -o - "${manifest_path}")"
 maximum_mismatched_pixel_ratio="$(plutil -extract comparison.maximumMismatchedPixelRatio raw -o - "${manifest_path}")"
 visual_scenarios=()
-visual_failures=()
+visual_failures=""
 
 while IFS= read -r visual_scenario || [[ -n "${visual_scenario}" ]]; do
   if [[ -n "${visual_scenario}" ]]; then
@@ -78,7 +78,7 @@ capture_scenario() {
   local app_screenshot="${scenario_output_dir}/app-393x852.png"
   local pixel_width
   local pixel_height
-  local visual_diff_crop_arguments=()
+  local visual_diff_command
   local crop_x
   local crop_y
   local crop_width
@@ -118,11 +118,23 @@ capture_scenario() {
     echo "Maximum mismatched pixel ratio: ${maximum_mismatched_pixel_ratio}"
   } > "${scenario_output_dir}/environment.txt"
 
+  visual_diff_command=(
+    xcrun swift "${script_dir}/visual-diff.swift"
+    --reference "${reference_path}"
+    --actual "${app_screenshot}"
+    --output-dir "${scenario_output_dir}"
+    --scenario "${visual_scenario}"
+    --figma-node-id "${figma_node_id}"
+    --source-reference-sha256 "${source_reference_sha256}"
+    --maximum-mean-absolute-error "${maximum_mean_absolute_error}"
+    --maximum-mismatched-pixel-ratio "${maximum_mismatched_pixel_ratio}"
+  )
+
   if crop_x="$(plutil -extract "figma.screens.${visual_scenario}.comparisonCrop.x" raw -o - "${manifest_path}" 2>/dev/null)"; then
     crop_y="$(plutil -extract "figma.screens.${visual_scenario}.comparisonCrop.y" raw -o - "${manifest_path}")" || return 1
     crop_width="$(plutil -extract "figma.screens.${visual_scenario}.comparisonCrop.width" raw -o - "${manifest_path}")" || return 1
     crop_height="$(plutil -extract "figma.screens.${visual_scenario}.comparisonCrop.height" raw -o - "${manifest_path}")" || return 1
-    visual_diff_crop_arguments=(
+    visual_diff_command+=(
       --crop-x "${crop_x}"
       --crop-y "${crop_y}"
       --crop-width "${crop_width}"
@@ -132,25 +144,16 @@ capture_scenario() {
       >> "${scenario_output_dir}/environment.txt"
   fi
 
-  xcrun swift "${script_dir}/visual-diff.swift" \
-    --reference "${reference_path}" \
-    --actual "${app_screenshot}" \
-    --output-dir "${scenario_output_dir}" \
-    --scenario "${visual_scenario}" \
-    --figma-node-id "${figma_node_id}" \
-    --source-reference-sha256 "${source_reference_sha256}" \
-    --maximum-mean-absolute-error "${maximum_mean_absolute_error}" \
-    --maximum-mismatched-pixel-ratio "${maximum_mismatched_pixel_ratio}" \
-    "${visual_diff_crop_arguments[@]}"
+  "${visual_diff_command[@]}"
 }
 
 for visual_scenario in "${visual_scenarios[@]}"; do
   if ! capture_scenario "${visual_scenario}"; then
-    visual_failures+=("${visual_scenario}")
+    visual_failures="${visual_failures} ${visual_scenario}"
   fi
 done
 
-if [[ "${#visual_failures[@]}" -gt 0 ]]; then
-  echo "Visual scenarios failed: ${visual_failures[*]}" >&2
+if [[ -n "${visual_failures}" ]]; then
+  echo "Visual scenarios failed:${visual_failures}" >&2
   exit 1
 fi
