@@ -53,6 +53,17 @@ jobs:
       - name: Capture Figma visual evidence
         run: VISUAL_OUTPUT_DIR="${RUNNER_TEMP}/MoneySnapVisual" bash ios/scripts/capture-visual-baseline.sh
 
+      - name: Verify visual evidence is complete
+        run: |
+          for scenario in home my record-category record-amount; do
+            for file in overlay.png diff.png report.json; do
+              test -s "${RUNNER_TEMP}/MoneySnapVisual/${scenario}/${file}" || {
+                echo "Missing visual evidence: ${scenario}/${file}" >&2
+                exit 1
+              }
+            done
+          done
+
       - name: Upload visual evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

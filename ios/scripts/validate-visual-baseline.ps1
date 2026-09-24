@@ -150,7 +150,7 @@ Assert-True ($capture -match '--maximum-mismatched-pixel-ratio') 'Visual capture
 Assert-True ($capture -match '--scenario') 'Visual report must identify every manifest scenario.'
 Assert-True ($capture -match '--figma-node-id') 'Visual report must identify every Figma node.'
 Assert-True ($capture -match '--source-reference-sha256') 'Visual report must identify every approved source reference checksum.'
-Assert-True ([regex]::Matches($capture, '(?m)^xcodebuild\s+\\?$').Count -eq 1) 'Visual capture must build the app exactly once.'
+Assert-True ([regex]::Matches($capture, '(?m)^xcodebuild\s+\\?\r?$').Count -eq 1) 'Visual capture must build the app exactly once.'
 Assert-True ([regex]::Matches($capture, 'simctl\s+install').Count -eq 1) 'Visual capture must install the app exactly once.'
 Assert-True ($capture -match 'for\s+visual_scenario\s+in') 'Visual capture must iterate through the ordered manifest scenarios.'
 Assert-True ($capture -match 'visual_failures') 'Visual capture must aggregate scenario failures after capturing all evidence.'
