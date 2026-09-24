@@ -22,7 +22,9 @@ cat > "$output" <<EOF
 	<key>method</key>
 	<string>app-store-connect</string>
 	<key>destination</key>
-	<string>upload</string>
+	<string>export</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
 	<key>signingStyle</key>
 	<string>automatic</string>
 	<key>signingCertificate</key>
